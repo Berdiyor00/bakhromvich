@@ -30,6 +30,23 @@ const FALLBACK_CONTENT: SiteContent = {
   updatedAt: new Date().toISOString()
 };
 
+const isSiteContent = (value: unknown): value is SiteContent => {
+  if (!value || typeof value !== "object") return false;
+
+  const content = value as Partial<SiteContent>;
+  return (
+    typeof content.companyName === "string" &&
+    typeof content.heroTitle === "string" &&
+    typeof content.heroSubtitle === "string" &&
+    typeof content.heroVideoUrl === "string" &&
+    typeof content.aboutTitle === "string" &&
+    typeof content.aboutText === "string" &&
+    typeof content.servicesJson === "string" &&
+    typeof content.galleryJson === "string" &&
+    typeof content.testimonialsJson === "string"
+  );
+};
+
 type GalleryItem =
   | string
   | {
@@ -112,7 +129,7 @@ export default function HomePage() {
       .get<SiteContent>("/public/content")
       .then((res) => {
         if (!isMounted) return;
-        setContent(res.data);
+        setContent(isSiteContent(res.data) ? res.data : FALLBACK_CONTENT);
       })
       .catch(() => {
         if (!isMounted) return;
@@ -172,7 +189,7 @@ export default function HomePage() {
     return <div className="loading">Loading...</div>;
   }
 
-  const heroVideoUrl = resolveHeroVideoUrl(content.heroVideoUrl.trim());
+  const heroVideoUrl = resolveHeroVideoUrl((content.heroVideoUrl ?? "").trim());
   const isDirectHeroVideo = isDirectHeroVideoUrl(heroVideoUrl);
   const heroEmbedUrl = !isDirectHeroVideo ? getEmbedVideoUrl(heroVideoUrl) : null;
 
