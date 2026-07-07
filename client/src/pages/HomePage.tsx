@@ -158,6 +158,34 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        threshold: 0.18,
+        rootMargin: "0px 0px -10% 0px"
+      }
+    );
+
+    elements.forEach((element, index) => {
+      element.style.setProperty("--reveal-delay", `${index * 70}ms`);
+      observer.observe(element);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [content]);
+
   const services = useMemo(() => {
     if (!content) return [];
     try {
@@ -215,7 +243,7 @@ export default function HomePage() {
         ) : null}
         <div className="overlay" />
         <ThreeBackdrop scrollProgress={scrollProgress} />
-        <nav className="top-nav">
+        <nav className="top-nav reveal-up is-visible" data-reveal>
           <a className="brand" href="/" aria-label={content.companyName}>
             <span className="brand-mark" />
             <span className="brand-text">{content.companyName}</span>
@@ -253,29 +281,29 @@ export default function HomePage() {
             </div>
           ) : null}
         </nav>
-        <div className="hero-text">
+        <div className="hero-text reveal-up is-visible" data-reveal>
           <h1>{content.heroTitle}</h1>
           <p>{content.heroSubtitle}</p>
         </div>
       </header>
 
       <main>
-        <section className="about section">
+        <section className="about section reveal-up" data-reveal>
           <h2>{content.aboutTitle}</h2>
           <p>{content.aboutText}</p>
         </section>
 
-        <section id="services" className="section card-grid">
+        <section id="services" className="section card-grid reveal-up" data-reveal>
           {services.map((service) => (
-            <article key={service.title} className="glass-card">
+            <article key={service.title} className="glass-card reveal-up" data-reveal>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
             </article>
           ))}
         </section>
 
-        <section id="gallery" className="section gallery-section">
-          <div className="section-heading">
+        <section id="gallery" className="section gallery-section reveal-up" data-reveal>
+          <div className="section-heading reveal-up" data-reveal>
             <h2>Galereya</h2>
             <p>Rasm va video slayder, autoplay bilan.</p>
           </div>
@@ -301,32 +329,32 @@ export default function HomePage() {
               const media = normalizeGalleryItem(item);
 
               return (
-              <SwiperSlide key={`${media.url}-${idx}`}>
-                <div className="gallery-slide">
-                  {media.type === "video" ? (
-                    <video className="gallery-media" autoPlay muted loop playsInline preload="metadata">
-                      <source src={media.url} />
-                    </video>
-                  ) : (
-                    <img className="gallery-media" src={media.url} alt={`project-${idx + 1}`} />
-                  )}
-                </div>
-              </SwiperSlide>
+                <SwiperSlide key={`${media.url}-${idx}`}>
+                  <div className="gallery-slide reveal-up" data-reveal>
+                    {media.type === "video" ? (
+                      <video className="gallery-media" autoPlay muted loop playsInline preload="metadata">
+                        <source src={media.url} />
+                      </video>
+                    ) : (
+                      <img className="gallery-media" src={media.url} alt={`project-${idx + 1}`} />
+                    )}
+                  </div>
+                </SwiperSlide>
               );
             })}
           </Swiper>
         </section>
 
-        <section className="section testimonials">
+        <section className="section testimonials reveal-up" data-reveal>
           {testimonials.map((item, idx) => (
-            <blockquote key={`${item.name}-${idx}`}>
+            <blockquote key={`${item.name}-${idx}`} className="reveal-up" data-reveal>
               <p>{item.text}</p>
               <footer>{item.name}</footer>
             </blockquote>
           ))}
         </section>
 
-        <section id="contact" className="section contact">
+        <section id="contact" className="section contact reveal-up" data-reveal>
           <h2>Biz bilan bog'laning</h2>
           <p>{content.contactPhone}</p>
           <p>{content.contactEmail}</p>
