@@ -10,7 +10,19 @@ import { errorHandler } from "./middleware/error";
 
 const app = express();
 
-app.use(cors({ origin: config.clientUrl, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || config.allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

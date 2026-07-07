@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: bakhromvich-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run prisma:generate && npm run build
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
