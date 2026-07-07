@@ -487,6 +487,26 @@ main {
   margin: 0.35rem 0;
 }
 
+.contact-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.contact-actions a {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, rgba(212, 162, 89, 0.22), rgba(255, 255, 255, 0.06));
+  color: #fff;
+  font-weight: 700;
+}
+
+.contact-actions a:hover {
+  filter: brightness(1.08);
+}
+
 .footer-shell {
   margin-top: 2rem;
   padding: 2.5rem 0 1.2rem;
@@ -501,7 +521,7 @@ main {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.25fr repeat(2, minmax(0, 1fr)) 1fr;
   gap: 2rem;
 }
 
@@ -518,6 +538,23 @@ main {
 .footer-column p {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.footer-column--contact {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle at 18% 10%, rgba(212, 162, 89, 0.16), rgba(255, 255, 255, 0.03));
+}
+
+.footer-contact-lines {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0.95rem;
+}
+
+.footer-contact-lines a {
+  color: #f6f2ea;
 }
 
 .footer-column--actions,
@@ -537,7 +574,7 @@ main {
 .footer-actions a {
   padding: 0.8rem 1.2rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #0f7df0, #1673da);
+  background: linear-gradient(135deg, #cc8c38, #a86a1f);
   color: white;
   font-weight: 700;
 }
@@ -673,17 +710,38 @@ main {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: 1.2rem;
 }
 
 .auth-form {
-  width: min(450px, 100%);
+  width: min(480px, 100%);
   display: grid;
-  gap: 0.8rem;
-  background: var(--bg-soft);
+  gap: 0.9rem;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(212, 162, 89, 0.18), transparent 40%),
+    var(--bg-soft);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 1.2rem;
+  border-radius: 20px;
+  padding: 1.35rem;
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.36);
+}
+
+.auth-kicker {
+  margin: 0;
+  font-size: 0.77rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.auth-form h2 {
+  margin: 0;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .auth-form input,
@@ -708,6 +766,58 @@ main {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.auth-form input,
+.auth-form select {
+  border-radius: 12px;
+  min-height: 44px;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  transform: translateY(-50%);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-submit {
+  min-height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f3d6a0, #d4a259 55%, #8a5a1f);
+  box-shadow: 0 14px 36px rgba(212, 162, 89, 0.24);
+}
+
+.auth-link {
+  text-align: center;
+  color: var(--muted);
+}
+
+.auth-link:hover {
+  color: #fff;
 }
 
 .auth-form button:hover,
@@ -873,6 +983,30 @@ main {
   gap: 0.7rem;
 }
 
+.import-panel {
+  margin-bottom: 0.8rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.import-link-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.55rem;
+}
+
+.import-link-row input {
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
 .editor-item {
   padding: 0.75rem;
   border-radius: 12px;
@@ -880,6 +1014,32 @@ main {
   background: rgba(0, 0, 0, 0.2);
   display: grid;
   gap: 0.6rem;
+}
+
+.item-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: space-between;
+}
+
+.field-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.field-mode-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.mode-switch {
+  display: inline-flex;
+  gap: 0.45rem;
 }
 
 .gallery-item {
@@ -900,6 +1060,12 @@ main {
   background: rgba(255, 255, 255, 0.13);
 }
 
+.mini-button.active {
+  border-color: rgba(212, 162, 89, 0.58);
+  background: rgba(212, 162, 89, 0.2);
+  color: #fff3df;
+}
+
 .mini-button.danger {
   color: #ffd2d2;
   border-color: rgba(255, 120, 120, 0.4);
@@ -912,6 +1078,14 @@ main {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
+}
+
+.mini-upload--wide {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mini-upload input {

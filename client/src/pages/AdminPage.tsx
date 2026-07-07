@@ -4,6 +4,11 @@ import { api, API_BASE_URL } from "../api/client";
 import type { CustomPage, FooterContent, GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
 
 type GalleryEntry = GalleryItemData;
+type InputMode = "url" | "upload";
+type ProjectImportMode = "link" | "file";
+type GalleryImportPayload = Partial<GalleryEntry> & {
+  extraImages?: string[];
+};
 
 const emptyContent: Omit<SiteContent, "updatedAt"> = {
   id: 1,
@@ -62,6 +67,12 @@ export default function AdminPage() {
   const [pages, setPages] = useState<CustomPage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
+  const [galleryMainMode, setGalleryMainMode] = useState<Record<number, InputMode>>({});
+  const [galleryExtraMode, setGalleryExtraMode] = useState<Record<number, InputMode>>({});
+  const [pageHeroMode, setPageHeroMode] = useState<Record<number, InputMode>>({});
+  const [pageGalleryMode, setPageGalleryMode] = useState<Record<number, InputMode>>({});
+  const [projectImportMode, setProjectImportMode] = useState<ProjectImportMode>("link");
+  const [projectJsonUrl, setProjectJsonUrl] = useState("");
   const primitiveFilled = [
     content.companyName,
     content.heroTitle,
@@ -129,6 +140,40 @@ export default function AdminPage() {
     }
   };
 
+  const normalizeImportedProject = (payload: GalleryImportPayload): GalleryEntry => {
+    const title = (payload.title ?? "").trim();
+    const url = (payload.url ?? "").trim();
+    const fallbackTitle = title || (url ? "Yangi loyiha" : "Import qilingan loyiha");
+    const images = Array.isArray(payload.images)
+      ? payload.images
+      : Array.isArray(payload.extraImages)
+        ? payload.extraImages
+        : [];
+
+    return {
+      url,
+      type: payload.type === "video" ? "video" : "image",
+      title: fallbackTitle,
+      slug: (payload.slug ?? "").trim() || slugify(fallbackTitle),
+      category: payload.category ?? "",
+      summary: payload.summary ?? "",
+      description: payload.description ?? "",
+      images: images.filter(Boolean)
+    };
+  };
+
+  const importProjectData = (payload: GalleryImportPayload) => {
+    const project = normalizeImportedProject(payload);
+
+    if (!project.url) {
+      setMessage("Import xato: JSON ichida 'url' bo'lishi kerak.");
+      return;
+    }
+
+    setGallery((prev) => [...prev, project]);
+    setMessage(`Loyiha import qilindi: ${project.title}`);
+  };
+
   useEffect(() => {
     api.get<SiteContent>("/admin/content").then((res) => {
       const { updatedAt, ...rest } = res.data;
@@ -147,33 +192,134 @@ export default function AdminPage() {
     setContent((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadMedia = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     const res = await api.post("/upload/media", formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
+    return res.data.url as string;
+  };
 
-    const fullUrl = `${API_BASE_URL}${res.data.url}`;
+  const onUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const uploadedUrl = await uploadMedia(file);
+
+    const fullUrl = `${API_BASE_URL}${uploadedUrl}`;
     setGallery((prev) => [
       ...prev,
       {
-        url: res.data.url,
+        url: uploadedUrl,
         type: file.type.startsWith("video/") ? "video" : "image",
         title: file.name.replace(/\.[^.]+$/, ""),
         slug: slugify(file.name.replace(/\.[^.]+$/, "")),
         category: "",
         summary: "",
         description: "",
-        images: [res.data.url]
+        images: [uploadedUrl]
       }
     ]);
 
     setMessage(`Yuklandi: ${fullUrl}. Endi Saqlash ni bosing.`);
     e.target.value = "";
+  };
+
+  const uploadGalleryMain = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const uploadedUrl = await uploadMedia(file);
+
+    setGallery((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              url: uploadedUrl,
+              type: file.type.startsWith("video/") ? "video" : "image",
+              images: item.images?.length ? item.images : [uploadedUrl]
+            }
+          : item
+      )
+    );
+
+    setMessage(`${file.name} yuklandi. Endi Saqlash ni bosing.`);
+    e.target.value = "";
+  };
+
+  const uploadGalleryExtras = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const uploaded = await Promise.all(Array.from(files).map((file) => uploadMedia(file)));
+
+    setGallery((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              images: [...(item.images ?? []), ...uploaded]
+            }
+          : item
+      )
+    );
+
+    setMessage(`${uploaded.length} ta qo'shimcha rasm yuklandi.`);
+    e.target.value = "";
+  };
+
+  const uploadPageHero = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const uploadedUrl = await uploadMedia(file);
+    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, heroImage: uploadedUrl } : item)));
+    setMessage(`${file.name} hero rasmi sifatida yuklandi.`);
+    e.target.value = "";
+  };
+
+  const uploadPageGallery = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const uploaded = await Promise.all(Array.from(files).map((file) => uploadMedia(file)));
+    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, gallery: [...item.gallery, ...uploaded] } : item)));
+    setMessage(`${uploaded.length} ta page rasmi yuklandi.`);
+    e.target.value = "";
+  };
+
+  const onImportProjectFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as GalleryImportPayload;
+      importProjectData(parsed);
+    } catch {
+      setMessage("Import xato: JSON fayl noto'g'ri formatda.");
+    }
+
+    e.target.value = "";
+  };
+
+  const onImportProjectLink = async () => {
+    const url = projectJsonUrl.trim();
+    if (!url) {
+      setMessage("Avval JSON link kiriting.");
+      return;
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        setMessage("Import xato: linkdan JSON olib bo'lmadi.");
+        return;
+      }
+
+      const parsed = (await response.json()) as GalleryImportPayload;
+      importProjectData(parsed);
+    } catch {
+      setMessage("Import xato: link yoki JSON formatini tekshiring.");
+    }
   };
 
   const updateService = (index: number, field: keyof ServiceItem, value: string) => {
@@ -230,20 +376,29 @@ export default function AdminPage() {
     setGallery((prev) => [...prev, { url: "", type: "image", title: "", slug: "", category: "", summary: "", description: "", images: [] }]);
   };
 
-  const addPage = () => {
+  const createEmptyPage = (): CustomPage => {
     const id = `page-${Date.now()}`;
-    setPages((prev) => [
-      ...prev,
-      {
-        id,
-        slug: id,
-        title: "",
-        excerpt: "",
-        content: "",
-        heroImage: "",
-        gallery: []
-      }
-    ]);
+    return {
+      id,
+      slug: id,
+      title: "",
+      excerpt: "",
+      content: "",
+      heroImage: "",
+      gallery: []
+    };
+  };
+
+  const addPage = () => {
+    setPages((prev) => [...prev, createEmptyPage()]);
+  };
+
+  const insertPageAfter = (index: number) => {
+    setPages((prev) => {
+      const next = [...prev];
+      next.splice(index + 1, 0, createEmptyPage());
+      return next;
+    });
   };
 
   const removeService = (index: number) => {
@@ -353,10 +508,53 @@ export default function AdminPage() {
                 </label>
               </div>
             </div>
+
+            <div className="import-panel">
+              <div className="field-mode-row">
+                <p className="field-mode-label">Loyiha ma'lumotini JSON orqali qo'shish</p>
+                <div className="mode-switch">
+                  <button type="button" className={`mini-button${projectImportMode === "link" ? " active" : ""}`} onClick={() => setProjectImportMode("link")}>Link</button>
+                  <button type="button" className={`mini-button${projectImportMode === "file" ? " active" : ""}`} onClick={() => setProjectImportMode("file")}>Fayl</button>
+                </div>
+              </div>
+
+              {projectImportMode === "link" ? (
+                <div className="import-link-row">
+                  <input
+                    value={projectJsonUrl}
+                    onChange={(e) => setProjectJsonUrl(e.target.value)}
+                    placeholder="https://example.com/project.json"
+                  />
+                  <button type="button" className="mini-button" onClick={onImportProjectLink}>Import</button>
+                </div>
+              ) : (
+                <label className="mini-upload mini-upload--wide">JSON fayl tanlash
+                  <input type="file" accept="application/json,.json" onChange={onImportProjectFile} />
+                </label>
+              )}
+
+              <p className="muted">JSON namuna: url, type, title, slug, category, summary, description, images.</p>
+            </div>
+
             <div className="editor-list">
               {gallery.map((item, index) => (
                 <article key={`gallery-${index}`} className="editor-item gallery-item">
-                  <label>Media URL<input value={item.url} onChange={(e) => updateGallery(index, "url", e.target.value)} /></label>
+                  <div className="field-mode-row">
+                    <p className="field-mode-label">Asosiy media manbasi</p>
+                    <div className="mode-switch">
+                      <button type="button" className={`mini-button${(galleryMainMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setGalleryMainMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
+                      <button type="button" className={`mini-button${(galleryMainMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setGalleryMainMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayl</button>
+                    </div>
+                  </div>
+
+                  {(galleryMainMode[index] ?? "url") === "url" ? (
+                    <label>Media URL<input value={item.url} onChange={(e) => updateGallery(index, "url", e.target.value)} /></label>
+                  ) : (
+                    <label className="mini-upload mini-upload--wide">Media fayl yuklash
+                      <input type="file" accept="image/*,video/*" onChange={(e) => uploadGalleryMain(index, e)} />
+                    </label>
+                  )}
+
                   <label>Turi
                     <select value={item.type} onChange={(e) => updateGallery(index, "type", e.target.value)}>
                       <option value="image">Image</option>
@@ -368,10 +566,28 @@ export default function AdminPage() {
                   <label>Kategoriya<input value={item.category ?? ""} onChange={(e) => updateGallery(index, "category", e.target.value)} /></label>
                   <label className="span-2">Qisqa matn<textarea rows={2} value={item.summary ?? ""} onChange={(e) => updateGallery(index, "summary", e.target.value)} /></label>
                   <label className="span-2">Batafsil matn<textarea rows={4} value={item.description ?? ""} onChange={(e) => updateGallery(index, "description", e.target.value)} /></label>
-                  <label className="span-2">Qo'shimcha rasmlar (har qatorda bitta URL)
-                    <textarea rows={4} value={(item.images ?? []).join("\n")} onChange={(e) => updateGalleryImages(index, e.target.value)} />
-                  </label>
-                  <button type="button" className="mini-button danger" onClick={() => removeGallery(index)}>O'chirish</button>
+
+                  <div className="field-mode-row span-2">
+                    <p className="field-mode-label">Qo'shimcha rasmlar manbasi</p>
+                    <div className="mode-switch">
+                      <button type="button" className={`mini-button${(galleryExtraMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setGalleryExtraMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
+                      <button type="button" className={`mini-button${(galleryExtraMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setGalleryExtraMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayllar</button>
+                    </div>
+                  </div>
+
+                  {(galleryExtraMode[index] ?? "url") === "url" ? (
+                    <label className="span-2">Qo'shimcha rasmlar (har qatorda bitta URL)
+                      <textarea rows={4} value={(item.images ?? []).join("\n")} onChange={(e) => updateGalleryImages(index, e.target.value)} />
+                    </label>
+                  ) : (
+                    <label className="mini-upload mini-upload--wide span-2">Bir yoki bir nechta rasm yuklash
+                      <input type="file" accept="image/*" multiple onChange={(e) => uploadGalleryExtras(index, e)} />
+                    </label>
+                  )}
+
+                  <div className="item-toolbar span-2">
+                    <button type="button" className="mini-button danger" onClick={() => removeGallery(index)}>O'chirish</button>
+                  </div>
                 </article>
               ))}
               {gallery.length === 0 ? <p className="muted">Hozircha gallery bo'sh.</p> : null}
@@ -432,15 +648,48 @@ export default function AdminPage() {
             <div className="editor-list">
               {pages.map((page, index) => (
                 <article key={page.id} className="editor-item">
+                  <div className="item-toolbar">
+                    <button type="button" className="mini-button" onClick={() => insertPageAfter(index)}>+ Keyin page qo'shish</button>
+                    <button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button>
+                  </div>
                   <label>Sahifa nomi<input value={page.title} onChange={(e) => updatePage(index, "title", e.target.value)} /></label>
                   <label>Slug<input value={page.slug} onChange={(e) => updatePage(index, "slug", slugify(e.target.value))} /></label>
                   <label>Qisqa izoh<textarea rows={2} value={page.excerpt} onChange={(e) => updatePage(index, "excerpt", e.target.value)} /></label>
                   <label>Asosiy matn<textarea rows={5} value={page.content} onChange={(e) => updatePage(index, "content", e.target.value)} /></label>
-                  <label>Hero image URL<input value={page.heroImage} onChange={(e) => updatePage(index, "heroImage", e.target.value)} /></label>
-                  <label>Gallery URLs (har qatorda bitta URL)
-                    <textarea rows={4} value={page.gallery.join("\n")} onChange={(e) => updatePageGallery(index, e.target.value)} />
-                  </label>
-                  <button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button>
+
+                  <div className="field-mode-row">
+                    <p className="field-mode-label">Hero rasmi manbasi</p>
+                    <div className="mode-switch">
+                      <button type="button" className={`mini-button${(pageHeroMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setPageHeroMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
+                      <button type="button" className={`mini-button${(pageHeroMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setPageHeroMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayl</button>
+                    </div>
+                  </div>
+
+                  {(pageHeroMode[index] ?? "url") === "url" ? (
+                    <label>Hero image URL<input value={page.heroImage} onChange={(e) => updatePage(index, "heroImage", e.target.value)} /></label>
+                  ) : (
+                    <label className="mini-upload mini-upload--wide">Hero rasmni yuklash
+                      <input type="file" accept="image/*" onChange={(e) => uploadPageHero(index, e)} />
+                    </label>
+                  )}
+
+                  <div className="field-mode-row">
+                    <p className="field-mode-label">Page gallery manbasi</p>
+                    <div className="mode-switch">
+                      <button type="button" className={`mini-button${(pageGalleryMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setPageGalleryMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
+                      <button type="button" className={`mini-button${(pageGalleryMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setPageGalleryMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayllar</button>
+                    </div>
+                  </div>
+
+                  {(pageGalleryMode[index] ?? "url") === "url" ? (
+                    <label>Gallery URLs (har qatorda bitta URL)
+                      <textarea rows={4} value={page.gallery.join("\n")} onChange={(e) => updatePageGallery(index, e.target.value)} />
+                    </label>
+                  ) : (
+                    <label className="mini-upload mini-upload--wide">Page gallery rasmlari yuklash
+                      <input type="file" accept="image/*" multiple onChange={(e) => uploadPageGallery(index, e)} />
+                    </label>
+                  )}
                 </article>
               ))}
               {pages.length === 0 ? <p className="muted">Hozircha custom page yo'q.</p> : null}

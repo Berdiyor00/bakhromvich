@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, API_BASE_URL } from "../api/client";
 import ThreeBackdrop from "../components/ThreeBackdrop";
-import type { CustomPage, FooterContent, GalleryItemData, ServiceItem, SiteContent, TestimonialItem } from "../types";
+import type { GalleryItemData, ServiceItem, SiteContent, TestimonialItem } from "../types";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -123,34 +123,10 @@ const normalizeGalleryItem = (item: GalleryItem) => {
   };
 };
 
-const FALLBACK_FOOTER: FooterContent = {
-  offices: [
-    {
-      city: "Moskva",
-      address: "Xolodilniy ko'chasi, 3, 1-bino, 8-bino, 2-qavat, 8217-ofis"
-    },
-    {
-      city: "Sankt-Peterburg",
-      address: "11-chi Krasnoarmeyskaya, 18-20, 102-kabi"
-    }
-  ],
-  phone: "+7 (495) 129-99-50",
-  email: "info@hot-walls.ru",
-  telegramUrl: "https://t.me/hotwalls",
-  whatsappUrl: "https://wa.me/74951299950",
-  socialLinks: [
-    { label: "VK", url: "https://vk.com" },
-    { label: "TG", url: "https://t.me/hotwalls" }
-  ],
-  policyLabel: "Maxfiylik siyosati",
-  policyUrl: "#",
-  copyright: "© “issiq devorlar”, 2013 — 2026"
-};
-
 export default function HomePage() {
   const [content, setContent] = useState<SiteContent | null>(null);
-  const [footer, setFooter] = useState<FooterContent>(FALLBACK_FOOTER);
-  const [pages, setPages] = useState<CustomPage[]>([]);
+  const [telegramUrl, setTelegramUrl] = useState("https://t.me/hotwalls");
+  const [instagramUrl, setInstagramUrl] = useState("https://instagram.com");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -169,25 +145,30 @@ export default function HomePage() {
       });
 
     api
-      .get<FooterContent>("/public/footer")
+      .get("/public/footer")
       .then((res) => {
         if (!isMounted) return;
-        setFooter(res.data);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setFooter(FALLBACK_FOOTER);
-      });
+        const footer = res.data as {
+          telegramUrl?: string;
+          socialLinks?: Array<{ label?: string; url?: string }>;
+        };
 
-    api
-      .get<CustomPage[]>("/public/pages")
-      .then((res) => {
-        if (!isMounted) return;
-        setPages(Array.isArray(res.data) ? res.data : []);
+        if (footer.telegramUrl) {
+          setTelegramUrl(footer.telegramUrl);
+        }
+
+        const instagram = footer.socialLinks?.find((item) => {
+          const label = (item.label ?? "").toLowerCase();
+          const url = (item.url ?? "").toLowerCase();
+          return label.includes("instagram") || label.includes("insta") || label === "ig" || url.includes("instagram.com");
+        });
+
+        if (instagram?.url) {
+          setInstagramUrl(instagram.url);
+        }
       })
       .catch(() => {
-        if (!isMounted) return;
-        setPages([]);
+        // keep defaults when footer API is unavailable
       });
 
     return () => {
@@ -308,7 +289,7 @@ export default function HomePage() {
               <div className="nav-links">
                 <a href="#services">Xizmatlar</a>
                 <a href="#gallery">Galereya</a>
-                <a href="#contact">Aloqa</a>
+                <a href="#contact">Biz bilan bog'lanish</a>
               </div>
 
               <a className="nav-cta" href="/login">
@@ -332,7 +313,7 @@ export default function HomePage() {
                 <div className="mobile-menu" id="mobile-nav">
                   <a href="#services" onClick={() => setMenuOpen(false)}>Xizmatlar</a>
                   <a href="#gallery" onClick={() => setMenuOpen(false)}>Galereya</a>
-                  <a href="#contact" onClick={() => setMenuOpen(false)}>Aloqa</a>
+                  <a href="#contact" onClick={() => setMenuOpen(false)}>Biz bilan bog'lanish</a>
                   <a href="/login" onClick={() => setMenuOpen(false)}>Login</a>
                 </div>
               ) : null}
@@ -423,63 +404,16 @@ export default function HomePage() {
         </section>
 
         <section id="contact" className="section contact reveal-up" data-reveal>
-          <h2>Biz bilan bog'laning</h2>
+          <h2>Biz bilan bog'lanish</h2>
           <p>{content.contactPhone}</p>
           <p>{content.contactEmail}</p>
           <p>{content.contactAddress}</p>
+          <div className="contact-actions">
+            <a href={telegramUrl} target="_blank" rel="noreferrer">Telegram</a>
+            <a href={instagramUrl} target="_blank" rel="noreferrer">Instagram</a>
+          </div>
         </section>
       </main>
-
-      <footer className="footer-shell">
-        <div className="page-container footer-inner">
-          <div className="footer-grid">
-            {footer.offices.slice(0, 2).map((office, index) => (
-              <section key={`${office.city}-${index}`} className="footer-column">
-                <h3>{office.city}</h3>
-                <p>{office.address}</p>
-              </section>
-            ))}
-
-            <section className="footer-column footer-column--actions">
-              <h3>{footer.phone}</h3>
-              <div>
-                <p>Bizga yozing:</p>
-                <div className="footer-actions">
-                  <a href={footer.telegramUrl} target="_blank" rel="noreferrer">Telegramma</a>
-                  <a href={footer.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp</a>
-                </div>
-              </div>
-            </section>
-
-            <section className="footer-column footer-column--social">
-              <h3>{footer.email}</h3>
-              <div>
-                <p>Ijtimoiy tarmoqlar</p>
-                <div className="footer-socials">
-                  {footer.socialLinks.map((item) => (
-                    <a key={item.label} href={item.url} target="_blank" rel="noreferrer" aria-label={item.label}>
-                      {item.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {pages.length ? (
-            <div className="footer-pages">
-              {pages.map((page) => (
-                <Link key={page.id} to={`/pages/${page.slug}`}>{page.title}</Link>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="footer-bottom">
-            <a href={footer.policyUrl}>{footer.policyLabel}</a>
-            <span>{footer.copyright}</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
