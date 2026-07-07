@@ -341,6 +341,12 @@ export default function AdminPage() {
     setGallery((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  const confirmDelete = (onConfirm: () => void, itemLabel: string) => {
+    const approved = window.confirm(`${itemLabel} ni o'chirishni tasdiqlaysizmi?`);
+    if (!approved) return;
+    onConfirm();
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -416,7 +422,13 @@ export default function AdminPage() {
                 <article key={`service-${index}`} className="editor-item">
                   <label>Title<input value={service.title} onChange={(e) => updateService(index, "title", e.target.value)} /></label>
                   <label>Description<textarea rows={3} value={service.description} onChange={(e) => updateService(index, "description", e.target.value)} /></label>
-                  <button type="button" className="mini-button danger" onClick={() => removeService(index)}>O'chirish</button>
+                  <button
+                    type="button"
+                    className="mini-button danger"
+                    onClick={() => confirmDelete(() => removeService(index), "Service")}
+                  >
+                    O'chirish
+                  </button>
                 </article>
               ))}
               {services.length === 0 ? <p className="muted">Hozircha service yo'q.</p> : null}
@@ -512,7 +524,13 @@ export default function AdminPage() {
                   )}
 
                   <div className="item-toolbar span-2">
-                    <button type="button" className="mini-button danger" onClick={() => removeGallery(index)}>O'chirish</button>
+                    <button
+                      type="button"
+                      className="mini-button danger"
+                      onClick={() => confirmDelete(() => removeGallery(index), "Gallery elementi")}
+                    >
+                      O'chirish
+                    </button>
                   </div>
                 </article>
               ))}
@@ -530,7 +548,13 @@ export default function AdminPage() {
                 <article key={`testimonial-${index}`} className="editor-item">
                   <label>Ism<input value={item.name} onChange={(e) => updateTestimonial(index, "name", e.target.value)} /></label>
                   <label>Matn<textarea rows={3} value={item.text} onChange={(e) => updateTestimonial(index, "text", e.target.value)} /></label>
-                  <button type="button" className="mini-button danger" onClick={() => removeTestimonial(index)}>O'chirish</button>
+                  <button
+                    type="button"
+                    className="mini-button danger"
+                    onClick={() => confirmDelete(() => removeTestimonial(index), "Mijoz fikri")}
+                  >
+                    O'chirish
+                  </button>
                 </article>
               ))}
               {testimonials.length === 0 ? <p className="muted">Hozircha testimonial yo'q.</p> : null}
