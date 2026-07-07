@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 
@@ -20,7 +21,15 @@ export default function RegisterPage() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.user.role);
       navigate(res.data.user.role === "ADMIN" ? "/admin" : "/login");
-    } catch {
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (!err.response || status === 404 || status === 405 || status === 500) {
+          setError("Server ulanmagan. Ro'yxatdan o'tish hozircha ishlamaydi.");
+          return;
+        }
+      }
+
       setError("Ro'yxatdan o'tishda xatolik.");
     }
   };
