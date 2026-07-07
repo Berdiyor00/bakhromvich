@@ -180,6 +180,70 @@ const getDefaultLocalPages = (): LocalCustomPage[] => [
   }
 ];
 
+const normalizeLocalContent = (content: LocalSiteContent): LocalSiteContent => {
+  const defaultContent = getDefaultLocalContent();
+
+  try {
+    const parsed = JSON.parse(content.galleryJson) as Array<string | Partial<{
+      url: string;
+      type: "image" | "video";
+      title: string;
+      slug: string;
+      category: string;
+      summary: string;
+      description: string;
+      images: string[];
+    }>>;
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return {
+        ...content,
+        galleryJson: defaultContent.galleryJson
+      };
+    }
+
+    const normalized = parsed.map((item, index) => {
+      const defaultItem = JSON.parse(defaultContent.galleryJson)[index] ?? {};
+
+      if (typeof item === "string") {
+        const baseTitle = `Loyiha ${index + 1}`;
+        return {
+          url: item,
+          type: /\.(mp4|webm|ogg)(\?|#|$)/i.test(item) ? "video" : "image",
+          title: baseTitle,
+          slug: `loyiha-${index + 1}`,
+          category: "Loyiha",
+          summary: "Batafsil ko'rish",
+          description: "Tanlangan loyiha haqida batafsil ma'lumot.",
+          images: [item]
+        };
+      }
+
+      const title = item.title || defaultItem.title || `Loyiha ${index + 1}`;
+      return {
+        url: item.url || defaultItem.url || "",
+        type: item.type === "video" ? "video" : (item.type || defaultItem.type || "image"),
+        title,
+        slug: item.slug || defaultItem.slug || title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-"),
+        category: item.category || defaultItem.category || "Loyiha",
+        summary: item.summary || defaultItem.summary || "Batafsil ko'rish",
+        description: item.description || defaultItem.description || "Tanlangan loyiha haqida batafsil ma'lumot.",
+        images: Array.isArray(item.images) && item.images.length ? item.images : (defaultItem.images || [item.url || defaultItem.url]).filter(Boolean)
+      };
+    });
+
+    return {
+      ...content,
+      galleryJson: JSON.stringify(normalized)
+    };
+  } catch {
+    return {
+      ...content,
+      galleryJson: defaultContent.galleryJson
+    };
+  }
+};
+
 const readJson = <T>(key: string, fallback: T): T => {
   try {
     const raw = localStorage.getItem(key);
@@ -203,6 +267,8 @@ const initLocalData = () => {
   const content = readJson<LocalSiteContent | null>(LOCAL_CONTENT_KEY, null);
   if (!content) {
     writeJson(LOCAL_CONTENT_KEY, getDefaultLocalContent());
+  } else {
+    writeJson(LOCAL_CONTENT_KEY, normalizeLocalContent(content));
   }
 
   const footer = readJson<LocalFooterContent | null>(LOCAL_FOOTER_KEY, null);
@@ -222,7 +288,7 @@ const setLocalUsers = (users: LocalUser[]) => {
   writeJson(LOCAL_USERS_KEY, users);
 };
 
-const getLocalContent = () => readJson<LocalSiteContent>(LOCAL_CONTENT_KEY, getDefaultLocalContent());
+const getLocalContent = () => normalizeLocalContent(readJson<LocalSiteContent>(LOCAL_CONTENT_KEY, getDefaultLocalContent()));
 
 const setLocalContent = (content: LocalSiteContent) => {
   writeJson(LOCAL_CONTENT_KEY, content);
