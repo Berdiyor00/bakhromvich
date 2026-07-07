@@ -8,6 +8,49 @@ export interface TestimonialItem {
   text: string;
 }
 
+export interface GalleryItemData {
+  url: string;
+  type: "image" | "video";
+  title?: string;
+  slug?: string;
+  category?: string;
+  summary?: string;
+  description?: string;
+  images?: string[];
+}
+
+export interface FooterOffice {
+  city: string;
+  address: string;
+}
+
+export interface FooterSocialLink {
+  label: string;
+  url: string;
+}
+
+export interface FooterContent {
+  offices: FooterOffice[];
+  phone: string;
+  email: string;
+  telegramUrl: string;
+  whatsappUrl: string;
+  socialLinks: FooterSocialLink[];
+  policyLabel: string;
+  policyUrl: string;
+  copyright: string;
+}
+
+export interface CustomPage {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  heroImage: string;
+  gallery: string[];
+}
+
 export interface SiteContent {
   id: number;
   companyName: string;

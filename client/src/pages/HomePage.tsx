@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, API_BASE_URL } from "../api/client";
 import ThreeBackdrop from "../components/ThreeBackdrop";
-import type { ServiceItem, SiteContent, TestimonialItem } from "../types";
+import type { CustomPage, FooterContent, GalleryItemData, ServiceItem, SiteContent, TestimonialItem } from "../types";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -49,23 +50,22 @@ const isSiteContent = (value: unknown): value is SiteContent => {
 
 type GalleryItem =
   | string
-  | {
-      url: string;
-      type?: "image" | "video";
-    };
+  | Partial<GalleryItemData>;
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
 
 const isDirectHeroVideoUrl = (url: string) => /\.(mp4|webm|ogg|m3u8)(\?|#|$)/i.test(url);
 
+const isAbsoluteMediaUrl = (url: string) => url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:");
+
 const resolveMediaUrl = (url: string) => {
-  if (url.startsWith("http")) return url;
+  if (!url || isAbsoluteMediaUrl(url)) return url;
   return `${API_BASE_URL}${url}`;
 };
 
 const resolveHeroVideoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http")) return url;
+  if (isAbsoluteMediaUrl(url)) return url;
   return `${API_BASE_URL}${url}`;
 };
 
@@ -112,13 +112,45 @@ const normalizeGalleryItem = (item: GalleryItem) => {
   }
 
   return {
-    url: resolveMediaUrl(item.url),
-    type: item.type ?? (isVideoUrl(item.url) ? ("video" as const) : ("image" as const))
+    url: resolveMediaUrl(item.url ?? ""),
+    type: item.type ?? (isVideoUrl(item.url ?? "") ? ("video" as const) : ("image" as const)),
+    title: item.title ?? "Loyiha",
+    slug: item.slug,
+    category: item.category,
+    summary: item.summary,
+    description: item.description,
+    images: Array.isArray(item.images) ? item.images.map(resolveMediaUrl) : []
   };
+};
+
+const FALLBACK_FOOTER: FooterContent = {
+  offices: [
+    {
+      city: "Moskva",
+      address: "Xolodilniy ko'chasi, 3, 1-bino, 8-bino, 2-qavat, 8217-ofis"
+    },
+    {
+      city: "Sankt-Peterburg",
+      address: "11-chi Krasnoarmeyskaya, 18-20, 102-kabi"
+    }
+  ],
+  phone: "+7 (495) 129-99-50",
+  email: "info@hot-walls.ru",
+  telegramUrl: "https://t.me/hotwalls",
+  whatsappUrl: "https://wa.me/74951299950",
+  socialLinks: [
+    { label: "VK", url: "https://vk.com" },
+    { label: "TG", url: "https://t.me/hotwalls" }
+  ],
+  policyLabel: "Maxfiylik siyosati",
+  policyUrl: "#",
+  copyright: "© “issiq devorlar”, 2013 — 2026"
 };
 
 export default function HomePage() {
   const [content, setContent] = useState<SiteContent | null>(null);
+  const [footer, setFooter] = useState<FooterContent>(FALLBACK_FOOTER);
+  const [pages, setPages] = useState<CustomPage[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -134,6 +166,28 @@ export default function HomePage() {
       .catch(() => {
         if (!isMounted) return;
         setContent(FALLBACK_CONTENT);
+      });
+
+    api
+      .get<FooterContent>("/public/footer")
+      .then((res) => {
+        if (!isMounted) return;
+        setFooter(res.data);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setFooter(FALLBACK_FOOTER);
+      });
+
+    api
+      .get<CustomPage[]>("/public/pages")
+      .then((res) => {
+        if (!isMounted) return;
+        setPages(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setPages([]);
       });
 
     return () => {
@@ -337,15 +391,22 @@ export default function HomePage() {
 
               return (
                 <SwiperSlide key={`${media.url}-${idx}`}>
-                  <div className="gallery-slide reveal-up" data-reveal>
-                    {media.type === "video" ? (
-                      <video className="gallery-media" autoPlay muted loop playsInline preload="metadata">
-                        <source src={media.url} />
-                      </video>
-                    ) : (
-                      <img className="gallery-media" src={media.url} alt={`project-${idx + 1}`} />
-                    )}
-                  </div>
+                  <Link className="gallery-link" to={media.slug ? `/projects/${media.slug}` : "/"}>
+                    <div className="gallery-slide reveal-up" data-reveal>
+                      {media.type === "video" ? (
+                        <video className="gallery-media" autoPlay muted loop playsInline preload="metadata">
+                          <source src={media.url} />
+                        </video>
+                      ) : (
+                        <img className="gallery-media" src={media.url} alt={media.title ?? `project-${idx + 1}`} />
+                      )}
+                      <div className="gallery-overlay">
+                        <span className="gallery-badge">{media.category ?? "Loyiha"}</span>
+                        <h3>{media.title ?? "Loyiha"}</h3>
+                        <p>{media.summary ?? "Batafsil ko'rish"}</p>
+                      </div>
+                    </div>
+                  </Link>
                 </SwiperSlide>
               );
             })}
@@ -368,6 +429,57 @@ export default function HomePage() {
           <p>{content.contactAddress}</p>
         </section>
       </main>
+
+      <footer className="footer-shell">
+        <div className="page-container footer-inner">
+          <div className="footer-grid">
+            {footer.offices.slice(0, 2).map((office, index) => (
+              <section key={`${office.city}-${index}`} className="footer-column">
+                <h3>{office.city}</h3>
+                <p>{office.address}</p>
+              </section>
+            ))}
+
+            <section className="footer-column footer-column--actions">
+              <h3>{footer.phone}</h3>
+              <div>
+                <p>Bizga yozing:</p>
+                <div className="footer-actions">
+                  <a href={footer.telegramUrl} target="_blank" rel="noreferrer">Telegramma</a>
+                  <a href={footer.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp</a>
+                </div>
+              </div>
+            </section>
+
+            <section className="footer-column footer-column--social">
+              <h3>{footer.email}</h3>
+              <div>
+                <p>Ijtimoiy tarmoqlar</p>
+                <div className="footer-socials">
+                  {footer.socialLinks.map((item) => (
+                    <a key={item.label} href={item.url} target="_blank" rel="noreferrer" aria-label={item.label}>
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {pages.length ? (
+            <div className="footer-pages">
+              {pages.map((page) => (
+                <Link key={page.id} to={`/pages/${page.slug}`}>{page.title}</Link>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="footer-bottom">
+            <a href={footer.policyUrl}>{footer.policyLabel}</a>
+            <span>{footer.copyright}</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

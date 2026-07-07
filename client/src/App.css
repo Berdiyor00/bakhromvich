@@ -402,6 +402,7 @@ main {
 }
 
 .gallery-slide {
+  position: relative;
   height: 280px;
   border-radius: 16px;
   overflow: hidden;
@@ -414,6 +415,42 @@ main {
   transform: translateY(-6px) scale(1.01);
   border-color: rgba(212, 162, 89, 0.4);
   box-shadow: 0 28px 44px rgba(0, 0, 0, 0.24);
+}
+
+.gallery-link {
+  display: block;
+}
+
+.gallery-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 1rem;
+  background: linear-gradient(180deg, transparent, rgba(5, 6, 8, 0.9));
+}
+
+.gallery-overlay h3,
+.gallery-overlay p {
+  margin: 0;
+}
+
+.gallery-overlay h3 {
+  margin-top: 0.4rem;
+}
+
+.gallery-overlay p {
+  margin-top: 0.3rem;
+  color: rgba(242, 238, 231, 0.78);
+  font-size: 0.92rem;
+}
+
+.gallery-badge {
+  display: inline-flex;
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(212, 162, 89, 0.18);
+  border: 1px solid rgba(212, 162, 89, 0.3);
+  color: #f3d6a0;
+  font-size: 0.78rem;
 }
 
 .gallery-media {
@@ -448,6 +485,169 @@ main {
 
 .contact p {
   margin: 0.35rem 0;
+}
+
+.footer-shell {
+  margin-top: 2rem;
+  padding: 2.5rem 0 1.2rem;
+  background: #020304;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-inner {
+  display: grid;
+  gap: 2rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.footer-column h3,
+.footer-column p {
+  margin: 0;
+}
+
+.footer-column h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.7rem;
+}
+
+.footer-column p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.footer-column--actions,
+.footer-column--social {
+  gap: 1rem;
+  display: grid;
+}
+
+.footer-actions,
+.footer-socials,
+.footer-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.footer-actions a {
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f7df0, #1673da);
+  color: white;
+  font-weight: 700;
+}
+
+.footer-socials a {
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.footer-pages a,
+.footer-bottom a {
+  color: var(--muted);
+}
+
+.footer-pages a:hover,
+.footer-bottom a:hover {
+  color: white;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  color: var(--muted);
+  padding-top: 0.4rem;
+}
+
+.detail-page {
+  padding: 2rem 0 3rem;
+}
+
+.detail-back {
+  display: inline-flex;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.detail-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.4rem;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.22);
+}
+
+.detail-hero img {
+  width: 100%;
+  height: 320px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.detail-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+}
+
+.detail-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+}
+
+.detail-hero p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.detail-content-card {
+  margin-top: 1.4rem;
+  padding: 1.2rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.detail-gallery-grid {
+  margin-top: 1.4rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.detail-gallery-card {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.detail-gallery-card img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -683,7 +883,7 @@ main {
 }
 
 .gallery-item {
-  grid-template-columns: 1.6fr 0.8fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
 }
 
@@ -818,6 +1018,17 @@ main {
   .admin-stats,
   .admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .footer-grid,
+  .detail-hero,
+  .detail-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .admin-grid .span-2 {

@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { api, API_BASE_URL } from "../api/client";
-import type { ServiceItem, SiteContent, TestimonialItem, User } from "../types";
+import type { CustomPage, FooterContent, GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
 
-type GalleryEntry = {
-  url: string;
-  type: "image" | "video";
-};
+type GalleryEntry = GalleryItemData;
 
 const emptyContent: Omit<SiteContent, "updatedAt"> = {
   id: 1,
@@ -23,12 +20,46 @@ const emptyContent: Omit<SiteContent, "updatedAt"> = {
   contactEmail: "",
   contactAddress: ""
 };
+const emptyFooter: FooterContent = {
+  offices: [
+    { city: "", address: "" },
+    { city: "", address: "" }
+  ],
+  phone: "",
+  email: "",
+  telegramUrl: "",
+  whatsappUrl: "",
+  socialLinks: [
+    { label: "", url: "" },
+    { label: "", url: "" }
+  ],
+  policyLabel: "",
+  policyUrl: "",
+  copyright: ""
+};
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+const parseLines = (value: string) =>
+  value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 
 export default function AdminPage() {
   const [content, setContent] = useState(emptyContent);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [gallery, setGallery] = useState<GalleryEntry[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
+  const [footer, setFooter] = useState<FooterContent>(emptyFooter);
+  const [pages, setPages] = useState<CustomPage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
   const primitiveFilled = [
@@ -42,8 +73,8 @@ export default function AdminPage() {
     content.contactAddress
   ].filter((item) => item.trim().length > 0).length;
 
-  const completedFields = primitiveFilled + (services.length > 0 ? 1 : 0) + (gallery.length > 0 ? 1 : 0) + (testimonials.length > 0 ? 1 : 0);
-  const saveReady = completedFields >= 9;
+  const completedFields = primitiveFilled + (services.length > 0 ? 1 : 0) + (gallery.length > 0 ? 1 : 0) + (testimonials.length > 0 ? 1 : 0) + (pages.length > 0 ? 1 : 0);
+  const saveReady = completedFields >= 10;
 
   const parseServices = (servicesJson: string) => {
     try {
@@ -65,20 +96,32 @@ export default function AdminPage() {
 
   const parseGallery = (galleryJson: string): GalleryEntry[] => {
     try {
-      const parsed = JSON.parse(galleryJson) as Array<string | { url: string; type?: "image" | "video" }>;
+      const parsed = JSON.parse(galleryJson) as Array<string | Partial<GalleryEntry>>;
       if (!Array.isArray(parsed)) return [];
 
       return parsed.map((item) => {
         if (typeof item === "string") {
           return {
             url: item,
-            type: /\.(mp4|webm|ogg)(\?|#|$)/i.test(item) ? "video" : "image"
+            type: /\.(mp4|webm|ogg)(\?|#|$)/i.test(item) ? "video" : "image",
+            title: "",
+            slug: "",
+            category: "",
+            summary: "",
+            description: "",
+            images: []
           };
         }
 
         return {
-          url: item.url,
-          type: item.type === "video" ? "video" : "image"
+          url: item.url ?? "",
+          type: item.type === "video" ? "video" : "image",
+          title: item.title ?? "",
+          slug: item.slug ?? "",
+          category: item.category ?? "",
+          summary: item.summary ?? "",
+          description: item.description ?? "",
+          images: Array.isArray(item.images) ? item.images : []
         };
       });
     } catch {
@@ -95,6 +138,8 @@ export default function AdminPage() {
       setTestimonials(parseTestimonials(rest.testimonialsJson));
     });
     api.get<User[]>("/admin/users").then((res) => setUsers(res.data));
+    api.get<FooterContent>("/admin/footer").then((res) => setFooter(res.data));
+    api.get<CustomPage[]>("/admin/pages").then((res) => setPages(Array.isArray(res.data) ? res.data : []));
   }, []);
 
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -117,7 +162,13 @@ export default function AdminPage() {
       ...prev,
       {
         url: res.data.url,
-        type: file.type.startsWith("video/") ? "video" : "image"
+        type: file.type.startsWith("video/") ? "video" : "image",
+        title: file.name.replace(/\.[^.]+$/, ""),
+        slug: slugify(file.name.replace(/\.[^.]+$/, "")),
+        category: "",
+        summary: "",
+        description: "",
+        images: [res.data.url]
       }
     ]);
 
@@ -137,6 +188,36 @@ export default function AdminPage() {
     setGallery((prev) => prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
   };
 
+  const updateGalleryImages = (index: number, value: string) => {
+    setGallery((prev) => prev.map((item, idx) => (idx === index ? { ...item, images: parseLines(value) } : item)));
+  };
+
+  const updateFooterOffice = (index: number, field: "city" | "address", value: string) => {
+    setFooter((prev) => ({
+      ...prev,
+      offices: prev.offices.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
+    }));
+  };
+
+  const updateFooterSocial = (index: number, field: "label" | "url", value: string) => {
+    setFooter((prev) => ({
+      ...prev,
+      socialLinks: prev.socialLinks.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
+    }));
+  };
+
+  const updateFooterValue = (field: keyof Omit<FooterContent, "offices" | "socialLinks">, value: string) => {
+    setFooter((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePage = (index: number, field: keyof CustomPage, value: string) => {
+    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
+  };
+
+  const updatePageGallery = (index: number, value: string) => {
+    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, gallery: parseLines(value) } : item)));
+  };
+
   const addService = () => {
     setServices((prev) => [...prev, { title: "", description: "" }]);
   };
@@ -146,7 +227,23 @@ export default function AdminPage() {
   };
 
   const addGallery = () => {
-    setGallery((prev) => [...prev, { url: "", type: "image" }]);
+    setGallery((prev) => [...prev, { url: "", type: "image", title: "", slug: "", category: "", summary: "", description: "", images: [] }]);
+  };
+
+  const addPage = () => {
+    const id = `page-${Date.now()}`;
+    setPages((prev) => [
+      ...prev,
+      {
+        id,
+        slug: id,
+        title: "",
+        excerpt: "",
+        content: "",
+        heroImage: "",
+        gallery: []
+      }
+    ]);
   };
 
   const removeService = (index: number) => {
@@ -161,6 +258,10 @@ export default function AdminPage() {
     setGallery((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  const removePage = (index: number) => {
+    setPages((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -171,7 +272,11 @@ export default function AdminPage() {
       testimonialsJson: JSON.stringify(testimonials)
     };
 
-    await api.put("/admin/content", payload);
+    await Promise.all([
+      api.put("/admin/content", payload),
+      api.put("/admin/footer", footer),
+      api.put("/admin/pages", pages)
+    ]);
     setContent(payload);
     setMessage("Muvaffaqiyatli saqlandi");
   };
@@ -258,6 +363,14 @@ export default function AdminPage() {
                       <option value="video">Video</option>
                     </select>
                   </label>
+                  <label>Nomi<input value={item.title ?? ""} onChange={(e) => updateGallery(index, "title", e.target.value)} /></label>
+                  <label>Slug<input value={item.slug ?? ""} onChange={(e) => updateGallery(index, "slug", slugify(e.target.value))} /></label>
+                  <label>Kategoriya<input value={item.category ?? ""} onChange={(e) => updateGallery(index, "category", e.target.value)} /></label>
+                  <label className="span-2">Qisqa matn<textarea rows={2} value={item.summary ?? ""} onChange={(e) => updateGallery(index, "summary", e.target.value)} /></label>
+                  <label className="span-2">Batafsil matn<textarea rows={4} value={item.description ?? ""} onChange={(e) => updateGallery(index, "description", e.target.value)} /></label>
+                  <label className="span-2">Qo'shimcha rasmlar (har qatorda bitta URL)
+                    <textarea rows={4} value={(item.images ?? []).join("\n")} onChange={(e) => updateGalleryImages(index, e.target.value)} />
+                  </label>
                   <button type="button" className="mini-button danger" onClick={() => removeGallery(index)}>O'chirish</button>
                 </article>
               ))}
@@ -279,6 +392,58 @@ export default function AdminPage() {
                 </article>
               ))}
               {testimonials.length === 0 ? <p className="muted">Hozircha testimonial yo'q.</p> : null}
+            </div>
+          </section>
+
+          <section className="span-2 editor-section">
+            <div className="editor-head">
+              <h3>Footer</h3>
+            </div>
+            <div className="editor-list">
+              {footer.offices.map((office, index) => (
+                <article key={`office-${index}`} className="editor-item">
+                  <label>Shahar<input value={office.city} onChange={(e) => updateFooterOffice(index, "city", e.target.value)} /></label>
+                  <label>Manzil<textarea rows={3} value={office.address} onChange={(e) => updateFooterOffice(index, "address", e.target.value)} /></label>
+                </article>
+              ))}
+              <article className="editor-item">
+                <label>Telefon<input value={footer.phone} onChange={(e) => updateFooterValue("phone", e.target.value)} /></label>
+                <label>Email<input value={footer.email} onChange={(e) => updateFooterValue("email", e.target.value)} /></label>
+                <label>Telegram URL<input value={footer.telegramUrl} onChange={(e) => updateFooterValue("telegramUrl", e.target.value)} /></label>
+                <label>WhatsApp URL<input value={footer.whatsappUrl} onChange={(e) => updateFooterValue("whatsappUrl", e.target.value)} /></label>
+                <label>Privacy label<input value={footer.policyLabel} onChange={(e) => updateFooterValue("policyLabel", e.target.value)} /></label>
+                <label>Privacy URL<input value={footer.policyUrl} onChange={(e) => updateFooterValue("policyUrl", e.target.value)} /></label>
+                <label>Copyright<input value={footer.copyright} onChange={(e) => updateFooterValue("copyright", e.target.value)} /></label>
+              </article>
+              {footer.socialLinks.map((item, index) => (
+                <article key={`social-${index}`} className="editor-item">
+                  <label>Social nomi<input value={item.label} onChange={(e) => updateFooterSocial(index, "label", e.target.value)} /></label>
+                  <label>Social URL<input value={item.url} onChange={(e) => updateFooterSocial(index, "url", e.target.value)} /></label>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="span-2 editor-section">
+            <div className="editor-head">
+              <h3>Custom Pages</h3>
+              <button type="button" className="mini-button" onClick={addPage}>+ Page qo'shish</button>
+            </div>
+            <div className="editor-list">
+              {pages.map((page, index) => (
+                <article key={page.id} className="editor-item">
+                  <label>Sahifa nomi<input value={page.title} onChange={(e) => updatePage(index, "title", e.target.value)} /></label>
+                  <label>Slug<input value={page.slug} onChange={(e) => updatePage(index, "slug", slugify(e.target.value))} /></label>
+                  <label>Qisqa izoh<textarea rows={2} value={page.excerpt} onChange={(e) => updatePage(index, "excerpt", e.target.value)} /></label>
+                  <label>Asosiy matn<textarea rows={5} value={page.content} onChange={(e) => updatePage(index, "content", e.target.value)} /></label>
+                  <label>Hero image URL<input value={page.heroImage} onChange={(e) => updatePage(index, "heroImage", e.target.value)} /></label>
+                  <label>Gallery URLs (har qatorda bitta URL)
+                    <textarea rows={4} value={page.gallery.join("\n")} onChange={(e) => updatePageGallery(index, e.target.value)} />
+                  </label>
+                  <button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button>
+                </article>
+              ))}
+              {pages.length === 0 ? <p className="muted">Hozircha custom page yo'q.</p> : null}
             </div>
           </section>
         </div>

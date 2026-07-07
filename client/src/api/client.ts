@@ -38,8 +38,42 @@ type LocalSiteContent = {
   updatedAt: string;
 };
 
+type LocalFooterOffice = {
+  city: string;
+  address: string;
+};
+
+type LocalFooterSocialLink = {
+  label: string;
+  url: string;
+};
+
+type LocalFooterContent = {
+  offices: LocalFooterOffice[];
+  phone: string;
+  email: string;
+  telegramUrl: string;
+  whatsappUrl: string;
+  socialLinks: LocalFooterSocialLink[];
+  policyLabel: string;
+  policyUrl: string;
+  copyright: string;
+};
+
+type LocalCustomPage = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  heroImage: string;
+  gallery: string[];
+};
+
 const LOCAL_USERS_KEY = "hotwalls_local_users";
 const LOCAL_CONTENT_KEY = "hotwalls_local_content";
+const LOCAL_FOOTER_KEY = "hotwalls_local_footer";
+const LOCAL_PAGES_KEY = "hotwalls_local_pages";
 
 const LOCAL_ADMIN_EMAIL = "admin@hotwalls.uz";
 const LOCAL_ADMIN_PASSWORD = "Admin12345";
@@ -70,13 +104,81 @@ const getDefaultLocalContent = (): LocalSiteContent => ({
     { title: "Issiqlik Izolyatsiyasi", description: "Energiya tejamkor va uzoq muddatli izolyatsiya." },
     { title: "Professional Montaj", description: "Mutaxassislar tomonidan tez va sifatli o'rnatish." }
   ]),
-  galleryJson: "[]",
+  galleryJson: JSON.stringify([
+    {
+      url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+      type: "image",
+      title: "Interyer Premium Panel",
+      slug: "interyer-premium-panel",
+      category: "Interyer",
+      summary: "Ichki makon uchun issiq va zamonaviy devor yechimi.",
+      description: "Bu loyiha interyer panel dizayni, material sifati va o'rnatish yakuniy ko'rinishini ko'rsatadi.",
+      images: [
+        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&q=80"
+      ]
+    },
+    {
+      url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+      type: "image",
+      title: "Fasad Light Stone",
+      slug: "fasad-light-stone",
+      category: "Eksteryer",
+      summary: "Tashqi fasad uchun toza va bardoshli finish.",
+      description: "Fasad loyihasi turli burchaklardan ko'rinish, tekstura va umumiy arxitektura uyg'unligini ochib beradi.",
+      images: [
+        "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1448630360428-65456885c650?auto=format&fit=crop&w=1200&q=80"
+      ]
+    }
+  ]),
   testimonialsJson: JSON.stringify([{ name: "Mijoz", text: "Xizmat sifati yuqori." }]),
   contactPhone: "+998 90 000 00 00",
   contactEmail: "info@hotwalls.uz",
   contactAddress: "Toshkent, O'zbekiston",
   updatedAt: getNowIso()
 });
+
+const getDefaultLocalFooter = (): LocalFooterContent => ({
+  offices: [
+    {
+      city: "Moskva",
+      address: "Xolodilniy ko'chasi, 3, 1-bino, 8-bino, 2-qavat, 8217-ofis"
+    },
+    {
+      city: "Sankt-Peterburg",
+      address: "11-chi Krasnoarmeyskaya, 18-20, 102-kabi"
+    }
+  ],
+  phone: "+7 (495) 129-99-50",
+  email: "info@hot-walls.ru",
+  telegramUrl: "https://t.me/hotwalls",
+  whatsappUrl: "https://wa.me/74951299950",
+  socialLinks: [
+    { label: "VK", url: "https://vk.com" },
+    { label: "Telegram", url: "https://t.me/hotwalls" }
+  ],
+  policyLabel: "Maxfiylik siyosati",
+  policyUrl: "#",
+  copyright: "© “issiq devorlar”, 2013 — 2026"
+});
+
+const getDefaultLocalPages = (): LocalCustomPage[] => [
+  {
+    id: "page-about-panels",
+    slug: "about-panels",
+    title: "Panel Turlari",
+    excerpt: "Material va tekstura variantlari haqida alohida sahifa.",
+    content: "Bu sahifada panel turlari, ularning xususiyatlari va ishlatish joylari batafsil ko'rsatiladi.",
+    heroImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80"
+    ]
+  }
+];
 
 const readJson = <T>(key: string, fallback: T): T => {
   try {
@@ -102,6 +204,16 @@ const initLocalData = () => {
   if (!content) {
     writeJson(LOCAL_CONTENT_KEY, getDefaultLocalContent());
   }
+
+  const footer = readJson<LocalFooterContent | null>(LOCAL_FOOTER_KEY, null);
+  if (!footer) {
+    writeJson(LOCAL_FOOTER_KEY, getDefaultLocalFooter());
+  }
+
+  const pages = readJson<LocalCustomPage[]>(LOCAL_PAGES_KEY, []);
+  if (!pages.length) {
+    writeJson(LOCAL_PAGES_KEY, getDefaultLocalPages());
+  }
 };
 
 const getLocalUsers = () => readJson<LocalUser[]>(LOCAL_USERS_KEY, getDefaultLocalUsers());
@@ -114,6 +226,18 @@ const getLocalContent = () => readJson<LocalSiteContent>(LOCAL_CONTENT_KEY, getD
 
 const setLocalContent = (content: LocalSiteContent) => {
   writeJson(LOCAL_CONTENT_KEY, content);
+};
+
+const getLocalFooter = () => readJson<LocalFooterContent>(LOCAL_FOOTER_KEY, getDefaultLocalFooter());
+
+const setLocalFooter = (footer: LocalFooterContent) => {
+  writeJson(LOCAL_FOOTER_KEY, footer);
+};
+
+const getLocalPages = () => readJson<LocalCustomPage[]>(LOCAL_PAGES_KEY, getDefaultLocalPages());
+
+const setLocalPages = (pages: LocalCustomPage[]) => {
+  writeJson(LOCAL_PAGES_KEY, pages);
 };
 
 const fileToDataUrl = (file: File) =>
@@ -153,6 +277,24 @@ const createLocalApi = (): ApiClient => {
               createdAt: user.createdAt
             })) as T
         );
+      }
+
+      if (path === "/public/footer" || path === "/admin/footer") {
+        return makeResponse(() => getLocalFooter() as T);
+      }
+
+      if (path === "/public/pages" || path === "/admin/pages") {
+        return makeResponse(() => getLocalPages() as T);
+      }
+
+      if (path.startsWith("/public/pages/")) {
+        const slug = path.replace("/public/pages/", "");
+        const page = getLocalPages().find((item) => item.slug === slug);
+        if (!page) {
+          throw new Error("Page not found");
+        }
+
+        return makeResponse(() => page as T);
       }
 
       throw new Error(`Unsupported GET path: ${path}`);
@@ -243,6 +385,18 @@ const createLocalApi = (): ApiClient => {
         };
 
         setLocalContent(updated);
+        return makeResponse(() => updated as T);
+      }
+
+      if (path === "/admin/footer") {
+        const updated = payload as LocalFooterContent;
+        setLocalFooter(updated);
+        return makeResponse(() => updated as T);
+      }
+
+      if (path === "/admin/pages") {
+        const updated = payload as LocalCustomPage[];
+        setLocalPages(updated);
         return makeResponse(() => updated as T);
       }
 
