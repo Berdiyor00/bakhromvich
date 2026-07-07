@@ -7,6 +7,29 @@ import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 
+const FALLBACK_CONTENT: SiteContent = {
+  id: 0,
+  companyName: "HOT WALLS",
+  heroTitle: "Zamonaviy Issiqlik Va Fasad Yechimlari",
+  heroSubtitle: "Premium dizayn, mustahkam material va professional montaj.",
+  heroVideoUrl: "",
+  aboutTitle: "Biz Haqimizda",
+  aboutText: "Sayt vaqtincha oflayn API holatida ishlamoqda. Tez orada to'liq ma'lumotlar tiklanadi.",
+  servicesJson: JSON.stringify([
+    { title: "Fasad Panellari", description: "Bardoshli va estetik tashqi qoplama yechimlari." },
+    { title: "Issiqlik Izolyatsiyasi", description: "Energiya tejamkor va uzoq muddatli izolyatsiya." },
+    { title: "Professional Montaj", description: "Mutaxassislar tomonidan tez va sifatli o'rnatish." }
+  ]),
+  galleryJson: "[]",
+  testimonialsJson: JSON.stringify([
+    { name: "Mijoz", text: "Xizmat sifati yuqori, natija a'lo darajada." }
+  ]),
+  contactPhone: "+998 90 000 00 00",
+  contactEmail: "info@hotwalls.uz",
+  contactAddress: "Toshkent, O'zbekiston",
+  updatedAt: new Date().toISOString()
+};
+
 type GalleryItem =
   | string
   | {
@@ -83,7 +106,22 @@ export default function HomePage() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
-    api.get<SiteContent>("/public/content").then((res) => setContent(res.data));
+    let isMounted = true;
+
+    api
+      .get<SiteContent>("/public/content")
+      .then((res) => {
+        if (!isMounted) return;
+        setContent(res.data);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setContent(FALLBACK_CONTENT);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
