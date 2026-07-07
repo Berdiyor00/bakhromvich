@@ -6,11 +6,14 @@ import { api } from "../api/client";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [authMode, setAuthMode] = useState<"email" | "phone">("email");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<"USER" | "ADMIN">("USER");
+  const [googleEmail, setGoogleEmail] = useState("");
   const [error, setError] = useState("");
 
   const onSubmit = async (e: FormEvent) => {
@@ -18,7 +21,11 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await api.post("/auth/register", { name, email, password, role });
+      const payload = authMode === "phone"
+        ? { name, phone, password, role }
+        : { name, email, password, role };
+
+      const res = await api.post("/auth/register", payload);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.user.role);
       navigate(res.data.user.role === "ADMIN" ? "/admin" : "/login");
@@ -35,6 +42,21 @@ export default function RegisterPage() {
     }
   };
 
+  const onGoogleSignup = async () => {
+    setError("");
+    try {
+      const res = await api.post("/auth/google", {
+        email: googleEmail,
+        name: name || "Google User"
+      });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.user.role);
+      navigate("/");
+    } catch {
+      setError("Google ro'yxatdan o'tishda xatolik. Gmail kiriting.");
+    }
+  };
+
   return (
     <div className="auth-wrap">
       <form onSubmit={onSubmit} className="auth-form">
@@ -42,15 +64,27 @@ export default function RegisterPage() {
         <h2>Ro'yxatdan o'tish</h2>
         <p className="auth-subtitle">Ma'lumotlarni to'ldiring va boshqaruvga tez kirish oling.</p>
 
+        <div className="auth-mode-switch">
+          <button type="button" className={`auth-chip${authMode === "email" ? " is-active" : ""}`} onClick={() => setAuthMode("email")}>Email</button>
+          <button type="button" className={`auth-chip${authMode === "phone" ? " is-active" : ""}`} onClick={() => setAuthMode("phone")}>Telefon</button>
+        </div>
+
         <label className="field-label">
           Ism
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ismingiz" required />
         </label>
 
-        <label className="field-label">
-          Email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
-        </label>
+        {authMode === "email" ? (
+          <label className="field-label">
+            Email
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
+          </label>
+        ) : (
+          <label className="field-label">
+            Telefon raqam
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" type="tel" required />
+          </label>
+        )}
 
         <label className="field-label">
           Parol
@@ -91,6 +125,14 @@ export default function RegisterPage() {
         </label>
         {error && <p className="error">{error}</p>}
         <button type="submit" className="auth-submit">Ro'yxatdan o'tish</button>
+
+        <div className="auth-divider"><span>yoki</span></div>
+        <label className="field-label">
+          Google (Gmail)
+          <input value={googleEmail} onChange={(e) => setGoogleEmail(e.target.value)} placeholder="example@gmail.com" type="email" />
+        </label>
+        <button type="button" className="auth-google" onClick={onGoogleSignup}>Google bilan ro'yxatdan o'tish</button>
+
         <a className="auth-link" href="/login">Login sahifasi</a>
       </form>
     </div>

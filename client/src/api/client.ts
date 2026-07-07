@@ -16,6 +16,7 @@ type LocalUser = {
   id: number;
   name: string;
   email: string;
+  phone?: string;
   password: string;
   role: Role;
   createdAt: string;
@@ -368,8 +369,11 @@ const createLocalApi = (): ApiClient => {
 
     async post<T = any>(path: string, payload?: unknown): Promise<ApiResponse<T>> {
       if (path === "/auth/login") {
-        const body = (payload || {}) as { email?: string; password?: string };
-        const user = getLocalUsers().find((item) => item.email === body.email && item.password === body.password);
+        const body = (payload || {}) as { email?: string; phone?: string; password?: string };
+        const loginKey = (body.email || body.phone || "").toLowerCase();
+        const user = getLocalUsers().find(
+          (item) => (item.email.toLowerCase() === loginKey || (item.phone ?? "").toLowerCase() === loginKey) && item.password === body.password
+        );
 
         if (!user) {
           throw new Error("Invalid credentials");
@@ -390,14 +394,23 @@ const createLocalApi = (): ApiClient => {
       }
 
       if (path === "/auth/register") {
-        const body = (payload || {}) as { name?: string; email?: string; password?: string; role?: Role };
+        const body = (payload || {}) as { name?: string; email?: string; phone?: string; password?: string; role?: Role };
         const users = getLocalUsers();
 
-        if (!body.email || !body.password || !body.name) {
+        if ((!body.email && !body.phone) || !body.password || !body.name) {
           throw new Error("Invalid payload");
         }
 
-        const exists = users.some((item) => item.email.toLowerCase() === body.email!.toLowerCase());
+        const normalizedPhone = (body.phone || "").replace(/\s+/g, "").trim();
+        const derivedEmail = body.email || (normalizedPhone ? `${normalizedPhone}@phone.hotwalls.local` : "");
+
+        if (!derivedEmail) {
+          throw new Error("Invalid payload");
+        }
+
+        const exists = users.some(
+          (item) => item.email.toLowerCase() === derivedEmail.toLowerCase() || (!!normalizedPhone && (item.phone ?? "") === normalizedPhone)
+        );
         if (exists) {
           throw new Error("Email already exists");
         }
@@ -405,7 +418,8 @@ const createLocalApi = (): ApiClient => {
         const next: LocalUser = {
           id: users.length ? Math.max(...users.map((item) => item.id)) + 1 : 1,
           name: body.name,
-          email: body.email,
+          email: derivedEmail,
+          phone: normalizedPhone || undefined,
           password: body.password,
           role: body.role === "ADMIN" ? "ADMIN" : "USER",
           createdAt: getNowIso()
@@ -422,6 +436,44 @@ const createLocalApi = (): ApiClient => {
                 name: next.name,
                 email: next.email,
                 role: next.role
+              }
+            }) as T
+        );
+      }
+
+      if (path === "/auth/google") {
+        const body = (payload || {}) as { email?: string; name?: string };
+        const rawEmail = (body.email || "").trim().toLowerCase();
+        const googleEmail = rawEmail.endsWith("@gmail.com") ? rawEmail : "";
+
+        if (!googleEmail) {
+          throw new Error("Google email is required");
+        }
+
+        const users = getLocalUsers();
+        let user = users.find((item) => item.email.toLowerCase() === googleEmail);
+
+        if (!user) {
+          user = {
+            id: users.length ? Math.max(...users.map((item) => item.id)) + 1 : 1,
+            name: body.name?.trim() || "Google User",
+            email: googleEmail,
+            password: "google-oauth",
+            role: "USER",
+            createdAt: getNowIso()
+          };
+          setLocalUsers([...users, user]);
+        }
+
+        return makeResponse(
+          () =>
+            ({
+              token: `local-token-${user.id}`,
+              user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
               }
             }) as T
         );

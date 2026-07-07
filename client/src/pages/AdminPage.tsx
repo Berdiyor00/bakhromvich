@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { api, API_BASE_URL } from "../api/client";
-import type { CustomPage, FooterContent, GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
+import type { CustomPage, GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
 
 type GalleryEntry = GalleryItemData;
 type InputMode = "url" | "upload";
@@ -25,23 +25,6 @@ const emptyContent: Omit<SiteContent, "updatedAt"> = {
   contactEmail: "",
   contactAddress: ""
 };
-const emptyFooter: FooterContent = {
-  offices: [
-    { city: "", address: "" },
-    { city: "", address: "" }
-  ],
-  phone: "",
-  email: "",
-  telegramUrl: "",
-  whatsappUrl: "",
-  socialLinks: [
-    { label: "", url: "" },
-    { label: "", url: "" }
-  ],
-  policyLabel: "",
-  policyUrl: "",
-  copyright: ""
-};
 
 const slugify = (value: string) =>
   value
@@ -63,7 +46,6 @@ export default function AdminPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [gallery, setGallery] = useState<GalleryEntry[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
-  const [footer, setFooter] = useState<FooterContent>(emptyFooter);
   const [pages, setPages] = useState<CustomPage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
@@ -183,7 +165,6 @@ export default function AdminPage() {
       setTestimonials(parseTestimonials(rest.testimonialsJson));
     });
     api.get<User[]>("/admin/users").then((res) => setUsers(res.data));
-    api.get<FooterContent>("/admin/footer").then((res) => setFooter(res.data));
     api.get<CustomPage[]>("/admin/pages").then((res) => setPages(Array.isArray(res.data) ? res.data : []));
   }, []);
 
@@ -338,24 +319,6 @@ export default function AdminPage() {
     setGallery((prev) => prev.map((item, idx) => (idx === index ? { ...item, images: parseLines(value) } : item)));
   };
 
-  const updateFooterOffice = (index: number, field: "city" | "address", value: string) => {
-    setFooter((prev) => ({
-      ...prev,
-      offices: prev.offices.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
-    }));
-  };
-
-  const updateFooterSocial = (index: number, field: "label" | "url", value: string) => {
-    setFooter((prev) => ({
-      ...prev,
-      socialLinks: prev.socialLinks.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
-    }));
-  };
-
-  const updateFooterValue = (field: keyof Omit<FooterContent, "offices" | "socialLinks">, value: string) => {
-    setFooter((prev) => ({ ...prev, [field]: value }));
-  };
-
   const updatePage = (index: number, field: keyof CustomPage, value: string) => {
     setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
   };
@@ -393,14 +356,6 @@ export default function AdminPage() {
     setPages((prev) => [...prev, createEmptyPage()]);
   };
 
-  const insertPageAfter = (index: number) => {
-    setPages((prev) => {
-      const next = [...prev];
-      next.splice(index + 1, 0, createEmptyPage());
-      return next;
-    });
-  };
-
   const removeService = (index: number) => {
     setServices((prev) => prev.filter((_, idx) => idx !== index));
   };
@@ -429,7 +384,6 @@ export default function AdminPage() {
 
     await Promise.all([
       api.put("/admin/content", payload),
-      api.put("/admin/footer", footer),
       api.put("/admin/pages", pages)
     ]);
     setContent(payload);
@@ -613,45 +567,13 @@ export default function AdminPage() {
 
           <section className="span-2 editor-section">
             <div className="editor-head">
-              <h3>Footer</h3>
-            </div>
-            <div className="editor-list">
-              {footer.offices.map((office, index) => (
-                <article key={`office-${index}`} className="editor-item">
-                  <label>Shahar<input value={office.city} onChange={(e) => updateFooterOffice(index, "city", e.target.value)} /></label>
-                  <label>Manzil<textarea rows={3} value={office.address} onChange={(e) => updateFooterOffice(index, "address", e.target.value)} /></label>
-                </article>
-              ))}
-              <article className="editor-item">
-                <label>Telefon<input value={footer.phone} onChange={(e) => updateFooterValue("phone", e.target.value)} /></label>
-                <label>Email<input value={footer.email} onChange={(e) => updateFooterValue("email", e.target.value)} /></label>
-                <label>Telegram URL<input value={footer.telegramUrl} onChange={(e) => updateFooterValue("telegramUrl", e.target.value)} /></label>
-                <label>WhatsApp URL<input value={footer.whatsappUrl} onChange={(e) => updateFooterValue("whatsappUrl", e.target.value)} /></label>
-                <label>Privacy label<input value={footer.policyLabel} onChange={(e) => updateFooterValue("policyLabel", e.target.value)} /></label>
-                <label>Privacy URL<input value={footer.policyUrl} onChange={(e) => updateFooterValue("policyUrl", e.target.value)} /></label>
-                <label>Copyright<input value={footer.copyright} onChange={(e) => updateFooterValue("copyright", e.target.value)} /></label>
-              </article>
-              {footer.socialLinks.map((item, index) => (
-                <article key={`social-${index}`} className="editor-item">
-                  <label>Social nomi<input value={item.label} onChange={(e) => updateFooterSocial(index, "label", e.target.value)} /></label>
-                  <label>Social URL<input value={item.url} onChange={(e) => updateFooterSocial(index, "url", e.target.value)} /></label>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="span-2 editor-section">
-            <div className="editor-head">
               <h3>Custom Pages</h3>
               <button type="button" className="mini-button" onClick={addPage}>+ Page qo'shish</button>
             </div>
             <div className="editor-list">
               {pages.map((page, index) => (
                 <article key={page.id} className="editor-item">
-                  <div className="item-toolbar">
-                    <button type="button" className="mini-button" onClick={() => insertPageAfter(index)}>+ Keyin page qo'shish</button>
-                    <button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button>
-                  </div>
+                  <div className="item-toolbar"><button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button></div>
                   <label>Sahifa nomi<input value={page.title} onChange={(e) => updatePage(index, "title", e.target.value)} /></label>
                   <label>Slug<input value={page.slug} onChange={(e) => updatePage(index, "slug", slugify(e.target.value))} /></label>
                   <label>Qisqa izoh<textarea rows={2} value={page.excerpt} onChange={(e) => updatePage(index, "excerpt", e.target.value)} /></label>

@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
   const [error, setError] = useState("");
 
   const onSubmit = async (e: FormEvent) => {
@@ -30,6 +31,18 @@ export default function LoginPage() {
       }
 
       setError("Login xato. Email yoki parol noto'g'ri.");
+    }
+  };
+
+  const onGoogleLogin = async () => {
+    setError("");
+    try {
+      const res = await api.post("/auth/google", { email: googleEmail });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.user.role);
+      navigate(res.data.user.role === "ADMIN" ? "/admin" : "/");
+    } catch {
+      setError("Google orqali kirishda xatolik. Gmail kiriting.");
     }
   };
 
@@ -77,6 +90,14 @@ export default function LoginPage() {
 
         {error && <p className="error">{error}</p>}
         <button type="submit" className="auth-submit">Kirish</button>
+
+        <div className="auth-divider"><span>yoki</span></div>
+        <label className="field-label">
+          Google (Gmail)
+          <input value={googleEmail} onChange={(e) => setGoogleEmail(e.target.value)} placeholder="example@gmail.com" type="email" />
+        </label>
+        <button type="button" className="auth-google" onClick={onGoogleLogin}>Google bilan kirish</button>
+
         <a className="auth-link" href="/register">Ro'yxatdan o'tish</a>
       </form>
     </div>

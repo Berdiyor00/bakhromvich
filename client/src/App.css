@@ -744,6 +744,32 @@ main {
   line-height: 1.45;
 }
 
+.auth-mode-switch {
+  display: inline-flex;
+  gap: 0.5rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: max-content;
+}
+
+.auth-chip {
+  min-width: 104px;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.auth-chip.is-active {
+  color: #151515;
+  background: linear-gradient(135deg, #f5ddb2, #d4a259);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
 .auth-form input,
 .auth-form select,
 .auth-form button,
@@ -818,6 +844,38 @@ main {
 
 .auth-link:hover {
   color: #fff;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 0.1rem 0;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.auth-divider span {
+  position: relative;
+  padding: 0 0.6rem;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.auth-google {
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, #1f1f1f, #323232) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
 }
 
 .auth-form button:hover,
