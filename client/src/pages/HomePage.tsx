@@ -212,11 +212,7 @@ export default function HomePage() {
             <span className="hero-embed-mask hero-embed-mask-top" />
             <span className="hero-embed-mask hero-embed-mask-bottom" />
           </div>
-        ) : (
-          <div className="hero-video hero-fallback">
-            <a href={heroVideoUrl} target="_blank" rel="noreferrer">Video manbasi</a>
-          </div>
-        )}
+        ) : null}
         <div className="overlay" />
         <ThreeBackdrop scrollProgress={scrollProgress} />
         <nav className="top-nav">

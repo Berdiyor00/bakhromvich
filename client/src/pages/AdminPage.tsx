@@ -35,7 +35,6 @@ export default function AdminPage() {
     content.companyName,
     content.heroTitle,
     content.heroSubtitle,
-    content.heroVideoUrl,
     content.aboutTitle,
     content.aboutText,
     content.contactPhone,
@@ -44,7 +43,7 @@ export default function AdminPage() {
   ].filter((item) => item.trim().length > 0).length;
 
   const completedFields = primitiveFilled + (services.length > 0 ? 1 : 0) + (gallery.length > 0 ? 1 : 0) + (testimonials.length > 0 ? 1 : 0);
-  const saveReady = completedFields >= 10;
+  const saveReady = completedFields >= 9;
 
   const parseServices = (servicesJson: string) => {
     try {
@@ -123,25 +122,6 @@ export default function AdminPage() {
     ]);
 
     setMessage(`Yuklandi: ${fullUrl}. Endi Saqlash ni bosing.`);
-    e.target.value = "";
-  };
-
-  const onHeroUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await api.post("/upload/media", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
-
-    setContent((prev) => ({
-      ...prev,
-      heroVideoUrl: res.data.url
-    }));
-
-    setMessage(`Hero video yuklandi: ${API_BASE_URL}${res.data.url}. Endi Saqlash ni bosing.`);
     e.target.value = "";
   };
 
@@ -234,8 +214,6 @@ export default function AdminPage() {
           <label>Company Name<input name="companyName" value={content.companyName} onChange={onChange} /></label>
           <label>Hero Title<input name="heroTitle" value={content.heroTitle} onChange={onChange} /></label>
           <label>Hero Subtitle<input name="heroSubtitle" value={content.heroSubtitle} onChange={onChange} /></label>
-          <label>Hero Video URL<input name="heroVideoUrl" value={content.heroVideoUrl} onChange={onChange} /></label>
-          <label>Hero video yuklash<input type="file" accept="video/*" onChange={onHeroUpload} /></label>
           <label>About Title<input name="aboutTitle" value={content.aboutTitle} onChange={onChange} /></label>
           <label className="span-2">About Text<textarea name="aboutText" value={content.aboutText} onChange={onChange} rows={5} /></label>
           <label>Phone<input name="contactPhone" value={content.contactPhone} onChange={onChange} /></label>
