@@ -313,7 +313,6 @@ export default function HomePage() {
         <section id="gallery" className="section gallery-section reveal-up" data-reveal>
           <div className="section-heading reveal-up" data-reveal>
             <h2>Galereya</h2>
-            <p>Rasm va video slayder, autoplay bilan.</p>
           </div>
 
           <Swiper
