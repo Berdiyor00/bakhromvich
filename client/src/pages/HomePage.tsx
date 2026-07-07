@@ -243,51 +243,59 @@ export default function HomePage() {
         ) : null}
         <div className="overlay" />
         <ThreeBackdrop scrollProgress={scrollProgress} />
-        <nav className="top-nav reveal-up is-visible" data-reveal>
-          <a className="brand" href="/" aria-label={content.companyName}>
-            <span className="brand-mark" />
-            <span className="brand-text">{content.companyName}</span>
-          </a>
+        <div className="hero-nav-shell">
+          <div className="page-container">
+            <nav className="top-nav">
+              <a className="brand" href="/" aria-label={content.companyName}>
+                <span className="brand-mark" />
+                <span className="brand-text">{content.companyName}</span>
+              </a>
 
-          <div className="nav-links">
-            <a href="#services">Xizmatlar</a>
-            <a href="#gallery">Galereya</a>
-            <a href="#contact">Aloqa</a>
+              <div className="nav-links">
+                <a href="#services">Xizmatlar</a>
+                <a href="#gallery">Galereya</a>
+                <a href="#contact">Aloqa</a>
+              </div>
+
+              <a className="nav-cta" href="/login">
+                Login
+              </a>
+
+              <button
+                className={`burger-button${menuOpen ? " is-open" : ""}`}
+                type="button"
+                aria-label="Menyu"
+                aria-expanded={menuOpen}
+                aria-controls="mobile-nav"
+                onClick={() => setMenuOpen((value) => !value)}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+
+              {menuOpen ? (
+                <div className="mobile-menu" id="mobile-nav">
+                  <a href="#services" onClick={() => setMenuOpen(false)}>Xizmatlar</a>
+                  <a href="#gallery" onClick={() => setMenuOpen(false)}>Galereya</a>
+                  <a href="#contact" onClick={() => setMenuOpen(false)}>Aloqa</a>
+                  <a href="/login" onClick={() => setMenuOpen(false)}>Login</a>
+                </div>
+              ) : null}
+            </nav>
           </div>
-
-          <a className="nav-cta" href="/login">
-            Login
-          </a>
-
-          <button
-            className={`burger-button${menuOpen ? " is-open" : ""}`}
-            type="button"
-            aria-label="Menyu"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-            onClick={() => setMenuOpen((value) => !value)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-
-          {menuOpen ? (
-            <div className="mobile-menu" id="mobile-nav">
-              <a href="#services" onClick={() => setMenuOpen(false)}>Xizmatlar</a>
-              <a href="#gallery" onClick={() => setMenuOpen(false)}>Galereya</a>
-              <a href="#contact" onClick={() => setMenuOpen(false)}>Aloqa</a>
-              <a href="/login" onClick={() => setMenuOpen(false)}>Login</a>
+        </div>
+        <div className="hero-content-shell">
+          <div className="page-container">
+            <div className="hero-text reveal-up is-visible" data-reveal>
+              <h1>{content.heroTitle}</h1>
+              <p>{content.heroSubtitle}</p>
             </div>
-          ) : null}
-        </nav>
-        <div className="hero-text reveal-up is-visible" data-reveal>
-          <h1>{content.heroTitle}</h1>
-          <p>{content.heroSubtitle}</p>
+          </div>
         </div>
       </header>
 
-      <main>
+      <main className="page-container">
         <section className="about section reveal-up" data-reveal>
           <h2>{content.aboutTitle}</h2>
           <p>{content.aboutText}</p>
