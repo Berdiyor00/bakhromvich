@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { api, API_BASE_URL } from "../api/client";
-import type { CustomPage, GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
+import type { GalleryItemData, ServiceItem, SiteContent, TestimonialItem, User } from "../types";
 
 type GalleryEntry = GalleryItemData;
 type InputMode = "url" | "upload";
@@ -23,7 +23,11 @@ const emptyContent: Omit<SiteContent, "updatedAt"> = {
   testimonialsJson: "[]",
   contactPhone: "",
   contactEmail: "",
-  contactAddress: ""
+  contactAddress: "",
+  contactTelegram: "",
+  contactInstagram: "",
+  contactExtraLabel: "",
+  contactExtraUrl: ""
 };
 
 const slugify = (value: string) =>
@@ -46,13 +50,10 @@ export default function AdminPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [gallery, setGallery] = useState<GalleryEntry[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
-  const [pages, setPages] = useState<CustomPage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
   const [galleryMainMode, setGalleryMainMode] = useState<Record<number, InputMode>>({});
   const [galleryExtraMode, setGalleryExtraMode] = useState<Record<number, InputMode>>({});
-  const [pageHeroMode, setPageHeroMode] = useState<Record<number, InputMode>>({});
-  const [pageGalleryMode, setPageGalleryMode] = useState<Record<number, InputMode>>({});
   const [projectImportMode, setProjectImportMode] = useState<ProjectImportMode>("link");
   const [projectJsonUrl, setProjectJsonUrl] = useState("");
   const primitiveFilled = [
@@ -63,10 +64,14 @@ export default function AdminPage() {
     content.aboutText,
     content.contactPhone,
     content.contactEmail,
-    content.contactAddress
+    content.contactAddress,
+    content.contactTelegram,
+    content.contactInstagram,
+    content.contactExtraLabel,
+    content.contactExtraUrl
   ].filter((item) => item.trim().length > 0).length;
 
-  const completedFields = primitiveFilled + (services.length > 0 ? 1 : 0) + (gallery.length > 0 ? 1 : 0) + (testimonials.length > 0 ? 1 : 0) + (pages.length > 0 ? 1 : 0);
+  const completedFields = primitiveFilled + (services.length > 0 ? 1 : 0) + (gallery.length > 0 ? 1 : 0) + (testimonials.length > 0 ? 1 : 0);
   const saveReady = completedFields >= 10;
 
   const parseServices = (servicesJson: string) => {
@@ -165,7 +170,6 @@ export default function AdminPage() {
       setTestimonials(parseTestimonials(rest.testimonialsJson));
     });
     api.get<User[]>("/admin/users").then((res) => setUsers(res.data));
-    api.get<CustomPage[]>("/admin/pages").then((res) => setPages(Array.isArray(res.data) ? res.data : []));
   }, []);
 
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -196,9 +200,9 @@ export default function AdminPage() {
         type: file.type.startsWith("video/") ? "video" : "image",
         title: file.name.replace(/\.[^.]+$/, ""),
         slug: slugify(file.name.replace(/\.[^.]+$/, "")),
-        category: "",
-        summary: "",
-        description: "",
+        category: "Loyiha",
+        summary: "Rasm haqida qisqa ma'lumot",
+        description: "Rasm haqida to'liq ma'lumot",
         images: [uploadedUrl]
       }
     ]);
@@ -246,24 +250,6 @@ export default function AdminPage() {
     );
 
     setMessage(`${uploaded.length} ta qo'shimcha rasm yuklandi.`);
-    e.target.value = "";
-  };
-
-  const uploadPageHero = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const uploadedUrl = await uploadMedia(file);
-    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, heroImage: uploadedUrl } : item)));
-    setMessage(`${file.name} hero rasmi sifatida yuklandi.`);
-    e.target.value = "";
-  };
-
-  const uploadPageGallery = async (index: number, e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
-    const uploaded = await Promise.all(Array.from(files).map((file) => uploadMedia(file)));
-    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, gallery: [...item.gallery, ...uploaded] } : item)));
-    setMessage(`${uploaded.length} ta page rasmi yuklandi.`);
     e.target.value = "";
   };
 
@@ -319,14 +305,6 @@ export default function AdminPage() {
     setGallery((prev) => prev.map((item, idx) => (idx === index ? { ...item, images: parseLines(value) } : item)));
   };
 
-  const updatePage = (index: number, field: keyof CustomPage, value: string) => {
-    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
-  };
-
-  const updatePageGallery = (index: number, value: string) => {
-    setPages((prev) => prev.map((item, idx) => (idx === index ? { ...item, gallery: parseLines(value) } : item)));
-  };
-
   const addService = () => {
     setServices((prev) => [...prev, { title: "", description: "" }]);
   };
@@ -336,24 +314,19 @@ export default function AdminPage() {
   };
 
   const addGallery = () => {
-    setGallery((prev) => [...prev, { url: "", type: "image", title: "", slug: "", category: "", summary: "", description: "", images: [] }]);
-  };
-
-  const createEmptyPage = (): CustomPage => {
-    const id = `page-${Date.now()}`;
-    return {
-      id,
-      slug: id,
-      title: "",
-      excerpt: "",
-      content: "",
-      heroImage: "",
-      gallery: []
-    };
-  };
-
-  const addPage = () => {
-    setPages((prev) => [...prev, createEmptyPage()]);
+    setGallery((prev) => [
+      ...prev,
+      {
+        url: "",
+        type: "image",
+        title: "Yangi rasm",
+        slug: "",
+        category: "Loyiha",
+        summary: "Rasm haqida qisqa ma'lumot",
+        description: "Rasm haqida to'liq ma'lumot",
+        images: []
+      }
+    ]);
   };
 
   const removeService = (index: number) => {
@@ -368,10 +341,6 @@ export default function AdminPage() {
     setGallery((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const removePage = (index: number) => {
-    setPages((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -383,8 +352,7 @@ export default function AdminPage() {
     };
 
     await Promise.all([
-      api.put("/admin/content", payload),
-      api.put("/admin/pages", pages)
+      api.put("/admin/content", payload)
     ]);
     setContent(payload);
     setMessage("Muvaffaqiyatli saqlandi");
@@ -433,6 +401,10 @@ export default function AdminPage() {
           <label>Phone<input name="contactPhone" value={content.contactPhone} onChange={onChange} /></label>
           <label>Email<input name="contactEmail" value={content.contactEmail} onChange={onChange} /></label>
           <label>Address<input name="contactAddress" value={content.contactAddress} onChange={onChange} /></label>
+          <label>Telegram Link<input name="contactTelegram" value={content.contactTelegram} onChange={onChange} /></label>
+          <label>Instagram Link<input name="contactInstagram" value={content.contactInstagram} onChange={onChange} /></label>
+          <label>Qo'shimcha tarmoq nomi<input name="contactExtraLabel" value={content.contactExtraLabel} onChange={onChange} /></label>
+          <label>Qo'shimcha tarmoq linki<input name="contactExtraUrl" value={content.contactExtraUrl} onChange={onChange} /></label>
 
           <section className="span-2 editor-section">
             <div className="editor-head">
@@ -518,8 +490,8 @@ export default function AdminPage() {
                   <label>Nomi<input value={item.title ?? ""} onChange={(e) => updateGallery(index, "title", e.target.value)} /></label>
                   <label>Slug<input value={item.slug ?? ""} onChange={(e) => updateGallery(index, "slug", slugify(e.target.value))} /></label>
                   <label>Kategoriya<input value={item.category ?? ""} onChange={(e) => updateGallery(index, "category", e.target.value)} /></label>
-                  <label className="span-2">Qisqa matn<textarea rows={2} value={item.summary ?? ""} onChange={(e) => updateGallery(index, "summary", e.target.value)} /></label>
-                  <label className="span-2">Batafsil matn<textarea rows={4} value={item.description ?? ""} onChange={(e) => updateGallery(index, "description", e.target.value)} /></label>
+                  <label className="span-2">Rasm haqida qisqa matn<textarea rows={2} value={item.summary ?? ""} onChange={(e) => updateGallery(index, "summary", e.target.value)} /></label>
+                  <label className="span-2">Rasm haqida batafsil matn<textarea rows={4} value={item.description ?? ""} onChange={(e) => updateGallery(index, "description", e.target.value)} /></label>
 
                   <div className="field-mode-row span-2">
                     <p className="field-mode-label">Qo'shimcha rasmlar manbasi</p>
@@ -565,58 +537,6 @@ export default function AdminPage() {
             </div>
           </section>
 
-          <section className="span-2 editor-section">
-            <div className="editor-head">
-              <h3>Custom Pages</h3>
-              <button type="button" className="mini-button" onClick={addPage}>+ Page qo'shish</button>
-            </div>
-            <div className="editor-list">
-              {pages.map((page, index) => (
-                <article key={page.id} className="editor-item">
-                  <div className="item-toolbar"><button type="button" className="mini-button danger" onClick={() => removePage(index)}>O'chirish</button></div>
-                  <label>Sahifa nomi<input value={page.title} onChange={(e) => updatePage(index, "title", e.target.value)} /></label>
-                  <label>Slug<input value={page.slug} onChange={(e) => updatePage(index, "slug", slugify(e.target.value))} /></label>
-                  <label>Qisqa izoh<textarea rows={2} value={page.excerpt} onChange={(e) => updatePage(index, "excerpt", e.target.value)} /></label>
-                  <label>Asosiy matn<textarea rows={5} value={page.content} onChange={(e) => updatePage(index, "content", e.target.value)} /></label>
-
-                  <div className="field-mode-row">
-                    <p className="field-mode-label">Hero rasmi manbasi</p>
-                    <div className="mode-switch">
-                      <button type="button" className={`mini-button${(pageHeroMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setPageHeroMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
-                      <button type="button" className={`mini-button${(pageHeroMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setPageHeroMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayl</button>
-                    </div>
-                  </div>
-
-                  {(pageHeroMode[index] ?? "url") === "url" ? (
-                    <label>Hero image URL<input value={page.heroImage} onChange={(e) => updatePage(index, "heroImage", e.target.value)} /></label>
-                  ) : (
-                    <label className="mini-upload mini-upload--wide">Hero rasmni yuklash
-                      <input type="file" accept="image/*" onChange={(e) => uploadPageHero(index, e)} />
-                    </label>
-                  )}
-
-                  <div className="field-mode-row">
-                    <p className="field-mode-label">Page gallery manbasi</p>
-                    <div className="mode-switch">
-                      <button type="button" className={`mini-button${(pageGalleryMode[index] ?? "url") === "url" ? " active" : ""}`} onClick={() => setPageGalleryMode((prev) => ({ ...prev, [index]: "url" }))}>URL</button>
-                      <button type="button" className={`mini-button${(pageGalleryMode[index] ?? "url") === "upload" ? " active" : ""}`} onClick={() => setPageGalleryMode((prev) => ({ ...prev, [index]: "upload" }))}>Fayllar</button>
-                    </div>
-                  </div>
-
-                  {(pageGalleryMode[index] ?? "url") === "url" ? (
-                    <label>Gallery URLs (har qatorda bitta URL)
-                      <textarea rows={4} value={page.gallery.join("\n")} onChange={(e) => updatePageGallery(index, e.target.value)} />
-                    </label>
-                  ) : (
-                    <label className="mini-upload mini-upload--wide">Page gallery rasmlari yuklash
-                      <input type="file" accept="image/*" multiple onChange={(e) => uploadPageGallery(index, e)} />
-                    </label>
-                  )}
-                </article>
-              ))}
-              {pages.length === 0 ? <p className="muted">Hozircha custom page yo'q.</p> : null}
-            </div>
-          </section>
         </div>
 
         {message && <p className="ok">{message}</p>}

@@ -36,6 +36,10 @@ type LocalSiteContent = {
   contactPhone: string;
   contactEmail: string;
   contactAddress: string;
+  contactTelegram: string;
+  contactInstagram: string;
+  contactExtraLabel: string;
+  contactExtraUrl: string;
   updatedAt: string;
 };
 
@@ -61,20 +65,9 @@ type LocalFooterContent = {
   copyright: string;
 };
 
-type LocalCustomPage = {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  heroImage: string;
-  gallery: string[];
-};
-
 const LOCAL_USERS_KEY = "hotwalls_local_users";
 const LOCAL_CONTENT_KEY = "hotwalls_local_content";
 const LOCAL_FOOTER_KEY = "hotwalls_local_footer";
-const LOCAL_PAGES_KEY = "hotwalls_local_pages";
 
 const LOCAL_ADMIN_EMAIL = "admin@hotwalls.uz";
 const LOCAL_ADMIN_PASSWORD = "Admin12345";
@@ -139,6 +132,10 @@ const getDefaultLocalContent = (): LocalSiteContent => ({
   contactPhone: "+998 90 000 00 00",
   contactEmail: "info@hotwalls.uz",
   contactAddress: "Toshkent, O'zbekiston",
+  contactTelegram: "https://t.me/hotwalls",
+  contactInstagram: "https://instagram.com/hotwalls",
+  contactExtraLabel: "YouTube",
+  contactExtraUrl: "https://youtube.com",
   updatedAt: getNowIso()
 });
 
@@ -166,26 +163,15 @@ const getDefaultLocalFooter = (): LocalFooterContent => ({
   copyright: "© “issiq devorlar”, 2013 — 2026"
 });
 
-const getDefaultLocalPages = (): LocalCustomPage[] => [
-  {
-    id: "page-about-panels",
-    slug: "about-panels",
-    title: "Panel Turlari",
-    excerpt: "Material va tekstura variantlari haqida alohida sahifa.",
-    content: "Bu sahifada panel turlari, ularning xususiyatlari va ishlatish joylari batafsil ko'rsatiladi.",
-    heroImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
-    gallery: [
-      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80"
-    ]
-  }
-];
-
 const normalizeLocalContent = (content: LocalSiteContent): LocalSiteContent => {
   const defaultContent = getDefaultLocalContent();
+  const withDefaults: LocalSiteContent = {
+    ...defaultContent,
+    ...content
+  };
 
   try {
-    const parsed = JSON.parse(content.galleryJson) as Array<string | Partial<{
+    const parsed = JSON.parse(withDefaults.galleryJson) as Array<string | Partial<{
       url: string;
       type: "image" | "video";
       title: string;
@@ -198,7 +184,7 @@ const normalizeLocalContent = (content: LocalSiteContent): LocalSiteContent => {
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return {
-        ...content,
+        ...withDefaults,
         galleryJson: defaultContent.galleryJson
       };
     }
@@ -234,12 +220,12 @@ const normalizeLocalContent = (content: LocalSiteContent): LocalSiteContent => {
     });
 
     return {
-      ...content,
+      ...withDefaults,
       galleryJson: JSON.stringify(normalized)
     };
   } catch {
     return {
-      ...content,
+      ...withDefaults,
       galleryJson: defaultContent.galleryJson
     };
   }
@@ -276,11 +262,6 @@ const initLocalData = () => {
   if (!footer) {
     writeJson(LOCAL_FOOTER_KEY, getDefaultLocalFooter());
   }
-
-  const pages = readJson<LocalCustomPage[]>(LOCAL_PAGES_KEY, []);
-  if (!pages.length) {
-    writeJson(LOCAL_PAGES_KEY, getDefaultLocalPages());
-  }
 };
 
 const getLocalUsers = () => readJson<LocalUser[]>(LOCAL_USERS_KEY, getDefaultLocalUsers());
@@ -299,12 +280,6 @@ const getLocalFooter = () => readJson<LocalFooterContent>(LOCAL_FOOTER_KEY, getD
 
 const setLocalFooter = (footer: LocalFooterContent) => {
   writeJson(LOCAL_FOOTER_KEY, footer);
-};
-
-const getLocalPages = () => readJson<LocalCustomPage[]>(LOCAL_PAGES_KEY, getDefaultLocalPages());
-
-const setLocalPages = (pages: LocalCustomPage[]) => {
-  writeJson(LOCAL_PAGES_KEY, pages);
 };
 
 const fileToDataUrl = (file: File) =>
@@ -348,20 +323,6 @@ const createLocalApi = (): ApiClient => {
 
       if (path === "/public/footer" || path === "/admin/footer") {
         return makeResponse(() => getLocalFooter() as T);
-      }
-
-      if (path === "/public/pages" || path === "/admin/pages") {
-        return makeResponse(() => getLocalPages() as T);
-      }
-
-      if (path.startsWith("/public/pages/")) {
-        const slug = path.replace("/public/pages/", "");
-        const page = getLocalPages().find((item) => item.slug === slug);
-        if (!page) {
-          throw new Error("Page not found");
-        }
-
-        return makeResponse(() => page as T);
       }
 
       throw new Error(`Unsupported GET path: ${path}`);
@@ -509,12 +470,6 @@ const createLocalApi = (): ApiClient => {
       if (path === "/admin/footer") {
         const updated = payload as LocalFooterContent;
         setLocalFooter(updated);
-        return makeResponse(() => updated as T);
-      }
-
-      if (path === "/admin/pages") {
-        const updated = payload as LocalCustomPage[];
-        setLocalPages(updated);
         return makeResponse(() => updated as T);
       }
 

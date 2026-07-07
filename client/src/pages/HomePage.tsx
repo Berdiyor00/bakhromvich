@@ -28,6 +28,10 @@ const FALLBACK_CONTENT: SiteContent = {
   contactPhone: "+998 90 000 00 00",
   contactEmail: "info@hotwalls.uz",
   contactAddress: "Toshkent, O'zbekiston",
+  contactTelegram: "https://t.me/hotwalls",
+  contactInstagram: "https://instagram.com/hotwalls",
+  contactExtraLabel: "YouTube",
+  contactExtraUrl: "https://youtube.com",
   updatedAt: new Date().toISOString()
 };
 
@@ -125,8 +129,6 @@ const normalizeGalleryItem = (item: GalleryItem) => {
 
 export default function HomePage() {
   const [content, setContent] = useState<SiteContent | null>(null);
-  const [telegramUrl, setTelegramUrl] = useState("https://t.me/hotwalls");
-  const [instagramUrl, setInstagramUrl] = useState("https://instagram.com");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -142,33 +144,6 @@ export default function HomePage() {
       .catch(() => {
         if (!isMounted) return;
         setContent(FALLBACK_CONTENT);
-      });
-
-    api
-      .get("/public/footer")
-      .then((res) => {
-        if (!isMounted) return;
-        const footer = res.data as {
-          telegramUrl?: string;
-          socialLinks?: Array<{ label?: string; url?: string }>;
-        };
-
-        if (footer.telegramUrl) {
-          setTelegramUrl(footer.telegramUrl);
-        }
-
-        const instagram = footer.socialLinks?.find((item) => {
-          const label = (item.label ?? "").toLowerCase();
-          const url = (item.url ?? "").toLowerCase();
-          return label.includes("instagram") || label.includes("insta") || label === "ig" || url.includes("instagram.com");
-        });
-
-        if (instagram?.url) {
-          setInstagramUrl(instagram.url);
-        }
-      })
-      .catch(() => {
-        // keep defaults when footer API is unavailable
       });
 
     return () => {
@@ -409,8 +384,9 @@ export default function HomePage() {
           <p>{content.contactEmail}</p>
           <p>{content.contactAddress}</p>
           <div className="contact-actions">
-            <a href={telegramUrl} target="_blank" rel="noreferrer">Telegram</a>
-            <a href={instagramUrl} target="_blank" rel="noreferrer">Instagram</a>
+            <a href={content.contactTelegram || "https://t.me/hotwalls"} target="_blank" rel="noreferrer">Telegram</a>
+            <a href={content.contactInstagram || "https://instagram.com"} target="_blank" rel="noreferrer">Instagram</a>
+            {content.contactExtraUrl ? <a href={content.contactExtraUrl} target="_blank" rel="noreferrer">{content.contactExtraLabel || "Qo'shimcha"}</a> : null}
           </div>
         </section>
       </main>

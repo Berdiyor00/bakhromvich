@@ -65,6 +65,10 @@ export interface SiteContent {
   contactPhone: string;
   contactEmail: string;
   contactAddress: string;
+  contactTelegram: string;
+  contactInstagram: string;
+  contactExtraLabel: string;
+  contactExtraUrl: string;
   updatedAt: string;
 }
 
