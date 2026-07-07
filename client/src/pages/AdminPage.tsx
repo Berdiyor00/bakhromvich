@@ -522,7 +522,7 @@ export default function AdminPage() {
 
           <section className="span-2 editor-section">
             <div className="editor-head">
-              <h3>Testimonials</h3>
+              <h3>Mijoz xabarlari (fikrlar)</h3>
               <button type="button" className="mini-button" onClick={addTestimonial}>+ Qo'shish</button>
             </div>
             <div className="editor-list">

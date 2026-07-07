@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, API_BASE_URL } from "../api/client";
 import ThreeBackdrop from "../components/ThreeBackdrop";
@@ -131,6 +132,9 @@ export default function HomePage() {
   const [content, setContent] = useState<SiteContent | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -226,6 +230,26 @@ export default function HomePage() {
   if (!content) {
     return <div className="loading">Loading...</div>;
   }
+
+  const onFeedbackSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setFeedbackMessage("");
+
+    try {
+      await api.post("/public/testimonials", {
+        name: feedbackName,
+        text: feedbackText
+      });
+
+      const res = await api.get<SiteContent>("/public/content");
+      setContent(isSiteContent(res.data) ? res.data : FALLBACK_CONTENT);
+      setFeedbackName("");
+      setFeedbackText("");
+      setFeedbackMessage("Fikringiz qabul qilindi. Rahmat!");
+    } catch {
+      setFeedbackMessage("Xabar yuborilmadi. Keyinroq urinib ko'ring.");
+    }
+  };
 
   const heroVideoUrl = resolveHeroVideoUrl((content.heroVideoUrl ?? "").trim());
   const isDirectHeroVideo = isDirectHeroVideoUrl(heroVideoUrl);
@@ -376,6 +400,25 @@ export default function HomePage() {
               <footer>{item.name}</footer>
             </blockquote>
           ))}
+
+          <form className="testimonial-form" onSubmit={onFeedbackSubmit}>
+            <h3>Fikringizni qoldiring</h3>
+            <input
+              value={feedbackName}
+              onChange={(e) => setFeedbackName(e.target.value)}
+              placeholder="Ismingiz"
+              required
+            />
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="Xizmat haqida fikringiz"
+              rows={3}
+              required
+            />
+            <button type="submit">Yuborish</button>
+            {feedbackMessage ? <p className="feedback-message">{feedbackMessage}</p> : null}
+          </form>
         </section>
 
         <section id="contact" className="section contact reveal-up" data-reveal>

@@ -440,6 +440,36 @@ const createLocalApi = (): ApiClient => {
         );
       }
 
+      if (path === "/public/testimonials") {
+        const body = (payload || {}) as { name?: string; text?: string };
+        const name = (body.name || "").trim();
+        const text = (body.text || "").trim();
+
+        if (!name || !text) {
+          throw new Error("Invalid testimonial payload");
+        }
+
+        const current = getLocalContent();
+        const existing = (() => {
+          try {
+            const parsed = JSON.parse(current.testimonialsJson) as Array<{ name?: string; text?: string }>;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })();
+
+        const updatedTestimonials = [...existing, { name, text }];
+        const updatedContent: LocalSiteContent = {
+          ...current,
+          testimonialsJson: JSON.stringify(updatedTestimonials),
+          updatedAt: getNowIso()
+        };
+
+        setLocalContent(updatedContent);
+        return makeResponse(() => ({ ok: true } as T));
+      }
+
       if (path === "/upload/media") {
         const formData = payload as FormData;
         const file = formData?.get("file");
